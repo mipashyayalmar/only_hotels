@@ -1,0 +1,288 @@
+{% extends 'shop/basic.html' %}
+
+{% block title %} Home {% endblock %}
+
+{% load static %}
+
+{% block css %}
+<link href="{% static 'template/index.css' %}" rel="stylesheet">
+<style>
+  #notification {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 1000;
+    display: none;
+  }
+  .sidebar {
+    position: fixed;
+    top: 120px;
+    left: 20px;
+    width: 200px;
+  }
+  .sidebar a {
+    display: block;
+    padding: 10px;
+    margin: 5px 0;
+    color: #333;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .sidebar a:hover {
+    background-color: #f0f0f0;
+  }
+/* Default styles */
+.product-card1 {
+    margin: 20px 0px 0px 190px;
+  }
+  @media (min-width: 1070px) {
+    .product-card1 {
+        margin: 20px 0px 0px 15px;
+    }
+  }
+  
+  
+  
+</style>
+{% endblock %}
+
+{% block body %}
+<div id="notification" class="alert alert-primary" role="alert"></div>
+<br>
+<div class="sidebar" id="sidebar">
+    {% for category, subcats in allProds %}
+        <a href="javascript:void(0)" class="category-link" data-category="{{ category }}" style="background-color:white; color:black; font-weight:200; font-size:20px; font-family:sans-serif;">{{ category|upper }}</a>
+        <div class="subcategory-list" id="subcats-{{ category }}" style="display: none;">
+            {% for subcategory, products in subcats %}
+                <a href="javascript:void(0)" class="subcategory-link" data-category="{{ category }}" data-subcategory="{{ subcategory }}">{{ subcategory }}</a>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+
+<div class="container mt-4" id="product-container">
+    {% for category, subcats in allProds %}
+        <div class="category-section" data-category="{{ category }}">
+            {% for subcategory, products in subcats %}
+                <div class="subcategory-section" data-subcategory="{{ subcategory }}">
+                   <center> <h4 class="my-4">{{ subcategory }}</h4></center>
+                    <div class="row">
+                        {% for product in products %}
+                            <div class="col-md-4 product-card1">
+                                <div class="card align-items-center" style="width: 18rem;">
+                                    <img src='/media/{{ product.image }}' class="product-img card-img-top" alt="{{ product.product_name }}">
+                                    <div class="card-body">
+                                        <h5 class="product-name card-title" id="namepr{{ product.id }}">{{ product.product_name }}...</h5>
+                                        <h6 class="product-price" style="color: #ff0000">Rs. <i id="pricepr{{ product.id }}">{{ product.price }}</i> /-</h6>
+                                        <p class="product-desc card-text">{{ product.desc|slice:"0:50" }}...</p>
+                                        <div id="divpr{{ product.id }}" class="divpr">
+                                            <button id="pr{{ product.id }}" class="btn btn-primary cart">Add</button>
+                                        </div>
+                                        <a href="/shop/productView/{{ product.id }}" id="qv{{ product.id }}" class="float-right">Quick View</a>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>
+
+<div class="container my-4">
+   <center> <h3>Cart Items</h3></center>
+    <div id="cartItems" class="product-container"></div>
+</div>
+{% endblock %}
+
+{% block js %}
+<script>
+// Initialize cart from localStorage or create a new cart
+if (localStorage.getItem('cart') == null) {
+    var cart = {};
+} else {
+    cart = JSON.parse(localStorage.getItem('cart'));
+    updateCart(cart);
+}
+
+// Event listeners for cart buttons
+document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('cart')) {
+        var idstr = event.target.id.toString().slice(2);
+        if (cart[idstr] != undefined) {
+            cart[idstr][0] += 1;
+            showNotification(cart[idstr][1] + " quantity increased to " + cart[idstr][0]);
+        } else {
+            var name = document.getElementById('namepr' + idstr).innerHTML;
+            var price = document.getElementById('pricepr' + idstr).innerHTML;
+            cart[idstr] = [1, name, parseInt(price)];
+            showNotification(cart[idstr][1] + " added to cart");
+        }
+        updateCart(cart);
+    }
+
+    if (event.target.classList.contains('minus')) {
+        var id = event.target.id.slice(5);
+        if (cart[id][0] > 0) {
+            cart[id][0] = Math.max(0, cart[id][0] - 1);
+            if (cart[id][0] == 0) {
+                showNotification(cart[id][1] + " removed from cart");
+                delete cart[id];
+                document.getElementById('divpr' + id).innerHTML = '<button id="pr' + id + '" class="btn btn-primary cart">Add</button>';
+            } else {
+                showNotification(cart[id][1] + " quantity decreased to " + cart[id][0]);
+            }
+            updateCart(cart);
+        }
+    }
+
+    if (event.target.classList.contains('plus')) {
+        var id = event.target.id.slice(4);
+        cart[id][0] += 1;
+        showNotification(cart[id][1] + " quantity increased to " + cart[id][0]);
+        updateCart(cart);
+    }
+});
+function updateCart(cart) {
+    var totalItems = 0;
+    var totalPrice = 0;
+    var cartItems = '';
+
+    for (var item in cart) {
+        var quantity = cart[item][0];
+        var price = cart[item][2];
+        var itemTotal = quantity * price;
+
+        totalItems += quantity;
+        totalPrice += itemTotal;
+
+        document.getElementById('divpr' + item).innerHTML = `
+            <button id="minus${item}" class="btn btn-primary minus">-</button>
+            <span id="val${item}">${quantity}</span>
+            <button id="plus${item}" class="btn btn-primary plus">+</button>`;
+        
+        cartItems += `<div class="product-card1 card align-items-center">
+            <div class="card-body">
+                <h5 class="card-title">${cart[item][1].slice(0, 20)}...</h5>
+                <h6 style="color: #ff0000">Rs. ${price} /-</h6>
+                <p>Quantity: ${quantity}</p>
+                <p>Total: Rs. ${itemTotal} /-</p>
+                <button id="minus${item}" class="btn btn-primary minus">-</button>
+                <span id="val${item}">${quantity}</span>
+                <button id="plus${item}" class="btn btn-primary plus">+</button>
+            </div>
+        </div>`;
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+    document.getElementById('cart').innerHTML = totalItems;
+    document.getElementById('cartItems').innerHTML = cartItems;
+
+    // Update the total price display
+    var totalPriceDiv = `<div class="total-price mt-4">
+                            <center><h4>Total Price: Rs. ${totalPrice} /-</h4></center>
+                         </div>`;
+    document.getElementById('cartItems').insertAdjacentHTML('beforeend', totalPriceDiv);
+
+    updatePopover(cart);
+}
+function updatePopover(cart) {
+    var popStr = "<div class='mx-2 my-2 d-flex flex-wrap'>";
+    var i = 1;
+    var totalPrice = 0;
+
+    for (var item in cart) {
+        var quantity = cart[item][0];
+        var price = cart[item][2];
+        var itemTotal = quantity * price;
+
+        // Format each cart item
+        popStr += `<div class="d-inline-block me-3 mb-2">
+                      <span><b>${i}</b>. ${cart[item][1].slice(0, 15)}... (Qty: ${quantity}, Total: Rs. ${itemTotal})</span>
+                   </div>`;
+        i += 1;
+        totalPrice += itemTotal;
+    }
+
+    if (i === 1) { // No items in cart
+        popStr += "<p><b>No item available in your cart</b></p></div><div class='mx-2 my-2'><a href='/shop'><button class='btn btn-primary'>Add items</button></a></div>";
+    } else {
+        // Add the total price and action buttons
+        popStr += `<div class='mt-2'>
+                      <h5>Total Price: Rs. ${totalPrice} /-</h5>
+                      <a href='/shop/checkout' class='btn btn-primary me-2' id='checkout'>Checkout</a>
+                      <a href='/shop/'><button class='btn btn-primary' onclick='clearCart()' id='clearCart'>Clear Cart</button></a>
+                   </div>`;
+    }
+
+    popStr += "</div>"; // Close the flex container
+
+    document.getElementById("popcart").setAttribute('data-content', popStr);
+    $('#popcart').popover();
+}
+
+
+
+function clearCart() {
+    cart = JSON.parse(localStorage.getItem('cart'));
+    for (var item in cart) {
+        document.getElementById('divpr' + item).innerHTML = '<button id="pr' + item + '" class="btn btn-primary cart">Add to Cart</button>';
+    }
+    localStorage.clear();
+    cart = {};
+    updateCart(cart);
+}
+
+function showNotification(message) {
+    var notification = document.getElementById('notification');
+    notification.innerText = message;
+    notification.style.display = 'block';
+    setTimeout(function() {
+        notification.style.display = 'none';
+    }, 2000);
+}
+
+// Show subcategories on category click
+document.querySelectorAll('.category-link').forEach(link => {
+    link.addEventListener('click', function() {
+        var category = this.getAttribute('data-category');
+        var subcatList = document.getElementById('subcats-' + category);
+        var allSubcatLists = document.querySelectorAll('.subcategory-list');
+
+        allSubcatLists.forEach(list => {
+            if (list !== subcatList) {
+                list.style.display = 'none';
+            }
+        });
+
+        subcatList.style.display = subcatList.style.display === 'none' ? 'block' : 'none';
+    });
+});
+
+// Filter products by subcategory
+document.querySelectorAll('.subcategory-link').forEach(link => {
+    link.addEventListener('click', function() {
+        var category = this.getAttribute('data-category');
+        var subcategory = this.getAttribute('data-subcategory');
+        document.querySelectorAll('.category-section').forEach(section => {
+            if (section.getAttribute('data-category') === category) {
+                section.style.display = 'block';
+                section.querySelectorAll('.subcategory-section').forEach(subSection => {
+                    if (subSection.getAttribute('data-subcategory') === subcategory) {
+                        subSection.style.display = 'block';
+                    } else {
+                        subSection.style.display = 'none';
+                    }
+                });
+            } else {
+                section.style.display = 'none';
+            }
+        });
+    });
+});
+
+updateCart(cart);
+</script>
+{% endblock %}
