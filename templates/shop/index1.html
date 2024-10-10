@@ -3,238 +3,442 @@
 {% block title %} Home {% endblock %}
 
 {% load static %}
-
-{% block css %}
-<link href="{% static 'template/index.css' %}" rel="stylesheet">
-<style>
-  #notification {
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    z-index: 1000;
-    display: none;
-  }
-  .sidebar {
-    position: fixed;
-    top: 120px;
-    left: 20px;
-    width: 200px;
-  }
-  .sidebar a {
-    display: block;
-    padding: 10px;
-    margin: 5px 0;
-    color: #333;
-    text-decoration: none;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  .sidebar a:hover {
-    background-color: #f0f0f0;
-  }
-/* Default styles */
-.product-card1 {
-    margin: 20px 0px 0px 190px;
-  }
-  @media (min-width: 1070px) {
-    .product-card1 {
-        margin: 20px 0px 0px 15px;
-    }
-  }
-  
-  
-  
-</style>
-{% endblock %}
-
 {% block body %}
-<div id="notification" class="alert alert-primary" role="alert"></div>
-<br>
-<div class="sidebar" id="sidebar">
-    {% for category, subcats in allProds %}
-        <a href="javascript:void(0)" class="category-link" data-category="{{ category }}" style="background-color:white; color:black; font-weight:200; font-size:20px; font-family:sans-serif;">{{ category|upper }}</a>
-        <div class="subcategory-list" id="subcats-{{ category }}" style="display: none;">
-            {% for subcategory, products in subcats %}
-                <a href="javascript:void(0)" class="subcategory-link" data-category="{{ category }}" data-subcategory="{{ subcategory }}">{{ subcategory }}</a>
-            {% endfor %}
-        </div>
-    {% endfor %}
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'template/table_menu.css' %}">
+    <style>
+        .list-group-item {
+            border-right:none;
+            border-left:none;
+            background-color:transparent;
+        }
+        .fa, .fas {
+            padding: 12px;
+            font-weight: 900;
+        }
+        .clear-cart{
+            text-decoration:none;
+            color:white;
+        }
+        .clear-cart:hover{
+            text-decoration:none;
+            color:#FAF9F6;
 
-<div class="container mt-4" id="product-container">
-    {% for category, subcats in allProds %}
-        <div class="category-section" data-category="{{ category }}">
-            {% for subcategory, products in subcats %}
-                <div class="subcategory-section" data-subcategory="{{ subcategory }}">
-                   <center> <h4 class="my-4">{{ subcategory }}</h4></center>
-                    <div class="row">
-                        {% for product in products %}
-                            <div class="col-md-4 product-card1">
-                                <div class="card align-items-center" style="width: 18rem;">
-                                    <img src='/media/{{ product.image }}' class="product-img card-img-top" alt="{{ product.product_name }}">
-                                    <div class="card-body">
-                                        <h5 class="product-name card-title" id="namepr{{ product.id }}">{{ product.product_name }}...</h5>
-                                        <h6 class="product-price" style="color: #ff0000">Rs. <i id="pricepr{{ product.id }}">{{ product.price }}</i> /-</h6>
-                                        <p class="product-desc card-text">{{ product.desc|slice:"0:50" }}...</p>
-                                        <div id="divpr{{ product.id }}" class="divpr">
-                                            <button id="pr{{ product.id }}" class="btn btn-primary cart">Add</button>
-                                        </div>
-                                        <a href="/shop/productView/{{ product.id }}" id="qv{{ product.id }}" class="float-right">Quick View</a>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
+        }
+    </style>
+</head>
+<main-body><br><br><br><br>
+    <div id="notification" class="alert alert-primary" role="alert"></div><br>
+    
+    <div class="sidebar" id="sidebar">
+        <div class="heading">
+            <h2>MENU</h2>
+        </div>
+        {% for category, subcats in allProds %}
+        <ul>
+            <li>
+                <a href="javascript:void(0)" class="category-link" data-category="{{ category }}">
+                    {{ category|upper }}
+                </a>
+            </li>
+            <ul class="subcategory-list" id="subcats-{{ category }}">
+                {% for subcategory, products in subcats %}
+                <li>
+                    <a href="javascript:void(0)" class="subcategory-link" data-category="{{ category }}" data-subcategory="{{ subcategory }}">
+                        {{ subcategory|title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </ul>
+        {% endfor %}
+    </div>
+
+    <div class="main-content" id="product-container">
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search..." />
+            <button id="search-btn">Search</button>
+        </div>
+        {% for category, subcats in allProds %}
+        {% for subcategory, products in subcats %}
+        <div class="category" data-subcategory="{{ subcategory }}" style="display: none;">
+            {{ subcategory }}
+            <div class="menu-items">
+                {% for product in products %}
+                <div class="menu-items">
+                    <div>
+                        <h5 id="namepr{{ product.id }}" class="product-name card-title" style="display:none;">{{ product.product_name }}</h5>
+                        <h6 id="pricepr{{ product.id }}" class="product-price" style="color: #ff0000">Rs. {{ product.price }} /-</h6>
+                        <div id="divpr{{ product.id }}" class="divpr">
+                            <button id="pr{{ product.id }}" class="menu-item cart">{{ product.product_name }}</button>
+                        </div>
                     </div>
                 </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
-    {% endfor %}
-</div>
+        {% endfor %}
+        {% endfor %}
+    </div>
 
-<div class="container my-4">
-   <center> <h3>Cart Items</h3></center>
-    <div id="cartItems" class="product-container"></div>
-</div>
+
+
+    <div class="container my-4" style="display:none;">
+       <center> <h3>Cart Items</h3></center>
+        <div id="cartItems" class="product-container"></div>
+    </div>
+    <style>
+        .fa-search {
+            font-size: 16px;
+            padding: 0px;
+        }
+    </style>
+    <div class="order-section">
+        <div class="order-header">
+            <div>
+                <button id="refreshCart"><i class="fa fa-search" aria-hidden="true"></i> CHECK IN</button>
+                <button>DELIVERY</button>
+                <button>PICK UP</button>
+            </div>
+        </div>
+        <div class="order-list">
+            <ul class="list-group" id="items"></ul>
+        </div>
+        <div class="order-footer">
+            <button><a href='/shop/' onclick='clearCart()' id='clearCart' class="clear-cart">Clear Cart</a></button>
+            <button id="refreshPage" class="btn btn-secondary">Final Check</button>
+
+            <li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
+                <span>TOTAL PRICE:</span>
+                <span class="badge badge-danger badge-pill" id="totalPrice">Rs. 0 /-</span> <!-- Updated span -->
+            </li>
+        </div>
+        <div class="order-footer-payment">
+            <div class="payment-options">
+                <label>
+                    <input type="radio" name="payment" value="cash" checked> Cash
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="card"> Card
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="other"> Other
+                </label>
+            </div>
+        </div>
+        <div class="final-options">
+            <span id="info">
+                <form method="post" action="/shop/checkout/" id="checkoutForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="itemsJson" id="itemsJson">
+                    <input type="hidden" name="amount" id="amount">
+                    <input type="hidden" name="user_id" id="user_id" value="{{ request.user.id }}">
+                    <div class="form-group" style="display:none;">
+                        <label for="address">Address</label>
+                        <input type="text" class="form-control" id="address" name="address" placeholder="Bhandishegaon" value="Bhandishegaon" required>
+                    </div>
+                    <div class="form-group" style="display:none;">
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="9172353945" value="9172353945" required pattern="[0-9]{10}">
+                    </div>
+                    <div class="print">
+                        <button type="submit" name="cashOnDelivery">Save</button>
+                    </div>
+                </form>
+                <div class="print">
+                    <button>Save & Print</button>
+                    <button>Save & Bill</button>
+                    <button>KOT</button>
+                    <button>KOT & Print</button>
+                </div>
+            </span>
+        </div>
+    </div>
+    
+    {% if user.is_authenticated %}
+        
+        <div class="">
+           
+        </div>
+    </div>
+    
+    {% else %}
+    <div id="cont2">
+        <div class="alert alert-info">
+            <font style="font-size:22px"><center>Before checkout you need to <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">Login</a></strong></center></font>
+        </div>
+    </div>
+    {% endif %}
+</main-body>
+<script src="{% static 'template/table_menu.js' %}"></script>
 {% endblock %}
 
 {% block js %}
+
 <script>
+    
+     // Initialize cart from localStorage
+     if (localStorage.getItem('cart') == null) {
+        var cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart'));
+    }
+
+    // Function to update only the specific cart item UI
+    function updateCartItem(itemId) {
+        var [qty, name, itemPrice] = cart[itemId];
+        var sumPrice = qty * itemPrice;
+
+        // Update the item's quantity and total price in the UI
+        $(`#val-${itemId}`).val(qty);
+        $(`#price-${itemId}`).html(`Rs. ${sumPrice}`);
+
+        // Update total cart price
+        updateTotalPrice();
+    }
+
+    // Function to update the total price only
+    function updateTotalPrice() {
+        var totalPrice = 0;
+        for (var item in cart) {
+            var sumPrice = cart[item][0] * cart[item][2];
+            totalPrice += sumPrice;
+        }
+        $('#totalPrice').html(`Rs. ${totalPrice}`);
+        localStorage.setItem('cart', JSON.stringify(cart));
+    }
+
+    // Function to initialize the cart UI
+    function initializeCart(cart) {
+        var cartItems = '';
+
+        for (var item in cart) {
+            var [qty, name, itemPrice] = cart[item];
+            var sumPrice = qty * itemPrice;
+
+            cartItems += `
+                <li class="order-item list-group-item d-flex justify-content-between align-items-center" id="item-${item}">
+                    <div class="item-info">
+                        <i class="fas hover-icon remove-item" id="remove-${item}" style="cursor: pointer;">&#xf057;</i>
+                        <img src="https://content.jdmagicbox.com/v2/comp/pandharpur/e5/9999p2186.2186.240102180603.t9e5/catalogue/hotel-royal-shetkari-bhandishegaon-pandharpur-restaurants-m844m8eap3.jpg" alt="" width="50" height="50"/>
+                        <div class="item-name">${name}</div>
+                    </div>
+                    <div class="item-quantity">
+                        <button id="minus-${item}" class="btn btn-primary btn-sm minus">-</button>
+                        <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
+                        <button id="plus-${item}" class="btn btn-primary btn-sm plus">+</button>
+                    </div>
+                    <div class="original-item-price">
+                        Rs. ${itemPrice}
+                        <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
+                    </div>
+                </li>`;
+        }
+
+        $('#items').html(cartItems);
+        updateTotalPrice();
+    }
+
+    // Initial call to initialize the cart
+    initializeCart(cart);
+
+    // Add functionality for increasing/decreasing quantity
+    $('#items').on('click', 'button.minus', function() {
+        var id = this.id.split('-')[1];
+        cart[id][0] = Math.max(0, cart[id][0] - 1);
+        if (cart[id][0] == 0) {
+            delete cart[id];
+            $(`#item-${id}`).remove(); // Remove the item if quantity is zero
+        } else {
+            updateCartItem(id); // Update only the specific item
+        }
+    });
+
+    $('#items').on('click', 'button.plus', function() {
+        var id = this.id.split('-')[1];
+        cart[id][0] += 1;
+        updateCartItem(id); // Update only the specific item
+    });
+
+    // Update quantity directly from input field
+    $('#items').on('change', 'input.qty-input', function() {
+        var id = this.id.split('-')[1];
+        var newQty = parseInt(this.value);
+        if (newQty > 0) {
+            cart[id][0] = newQty;
+            updateCartItem(id); // Update only the specific item
+        } else {
+            delete cart[id];
+            $(`#item-${id}`).remove(); // Remove the item if quantity is zero
+        }
+    });
+
+    // Functionality to remove an item when clicking the remove icon
+    $('#items').on('click', '.remove-item', function() {
+        var id = this.id.split('-')[1];
+        delete cart[id];
+        $(`#item-${id}`).remove(); // Remove the item from the UI
+        updateTotalPrice(); // Update the total price after removal
+    });
+
+    // Prevent form submission if cart is empty
+    $('#checkoutForm').on('submit', function(event) {
+        if (Object.keys(cart).length === 0) {
+            event.preventDefault();
+            alert('Your cart is empty. Please add items before checkout.');
+        }
+    });
+
+    // Refresh button functionality
+    $('#refreshCart').on('click', function() {
+        initializeCart(cart); // Re-initialize the cart UI on button click
+    });
+
+</script>
+<script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Initialize cart from localStorage or create a new cart
-if (localStorage.getItem('cart') == null) {
-    var cart = {};
-} else {
-    cart = JSON.parse(localStorage.getItem('cart'));
-    updateCart(cart);
+var cart = JSON.parse(localStorage.getItem('cart')) || {};
+
+// Update the cart display
+function updateCart() {
+    var totalItems = 0;
+    var totalPrice = 0;
+    var cartItems = '';
+    var i = 0;
+
+    for (var item in cart) {
+        var name = cart[item][1];
+        var qty = cart[item][0];
+        var itemPrice = cart[item][2];
+        var itemTotal = qty * itemPrice;
+
+        totalItems += qty;
+        totalPrice += itemTotal;
+        cartItems += `<li class="order-item list-group-item d-flex justify-content-between align-items-center">
+            <div class="item-info">
+                <i class="fas hover-icon remove-item" id="delete${item}" style="cursor: pointer;">&#xf057;</i>
+                <img src="https://content.jdmagicbox.com/v2/comp/pandharpur/e5/9999p2186.2186.240102180603.t9e5/catalogue/hotel-royal-shetkari-bhandishegaon-pandharpur-restaurants-m844m8eap3.jpg" alt="" width="30" height="30"/>
+                <div class="item-name"><a href='/shop/search/?search=${name}' class='alert-link'><span>${++i}: ${name}</span></a></div>
+            </div>
+            <div class="item-quantity">
+                <button id="decrease${item}" class="btn btn-primary btn-sm decrease">-</button>
+                <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
+                <button id="increase${item}" class="btn btn-primary btn-sm increase">+</button>
+            </div>
+            <div class="original-item-price">
+                Rs. ${itemPrice}
+                <div class="item-price">Rs. ${itemTotal}</div>
+            </div>
+        </li>`;
+    }
+
+    cartItems += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
+        <span>TOTAL PRICE:</span>
+        <span class="badge badge-danger badge-pill" id="totalPrice">Rs. ${totalPrice} /-</span>
+    </li>`;
+
+    $('#items').html(cartItems);
+    localStorage.setItem('cart', JSON.stringify(cart));
+    $('#itemsJson').val(JSON.stringify(cart));
+    $('#amount').val(totalPrice);
 }
 
 // Event listeners for cart buttons
 document.addEventListener('click', function(event) {
     if (event.target.classList.contains('cart')) {
         var idstr = event.target.id.toString().slice(2);
-        if (cart[idstr] != undefined) {
+        if (cart[idstr]) {
             cart[idstr][0] += 1;
             showNotification(cart[idstr][1] + " quantity increased to " + cart[idstr][0]);
         } else {
             var name = document.getElementById('namepr' + idstr).innerHTML;
-            var price = document.getElementById('pricepr' + idstr).innerHTML;
-            cart[idstr] = [1, name, parseInt(price)];
+            var price = parseInt(document.getElementById('pricepr' + idstr).innerText.replace('Rs. ', '').replace(' /-', ''));
+            cart[idstr] = [1, name, price];
             showNotification(cart[idstr][1] + " added to cart");
         }
-        updateCart(cart);
-    }
-
-    if (event.target.classList.contains('minus')) {
-        var id = event.target.id.slice(5);
-        if (cart[id][0] > 0) {
-            cart[id][0] = Math.max(0, cart[id][0] - 1);
-            if (cart[id][0] == 0) {
-                showNotification(cart[id][1] + " removed from cart");
-                delete cart[id];
-                document.getElementById('divpr' + id).innerHTML = '<button id="pr' + id + '" class="btn btn-primary cart">Add</button>';
-            } else {
-                showNotification(cart[id][1] + " quantity decreased to " + cart[id][0]);
-            }
-            updateCart(cart);
-        }
-    }
-
-    if (event.target.classList.contains('plus')) {
-        var id = event.target.id.slice(4);
-        cart[id][0] += 1;
-        showNotification(cart[id][1] + " quantity increased to " + cart[id][0]);
-        updateCart(cart);
+        updateCart();
     }
 });
-function updateCart(cart) {
-    var totalItems = 0;
-    var totalPrice = 0;
-    var cartItems = '';
 
-    for (var item in cart) {
-        var quantity = cart[item][0];
-        var price = cart[item][2];
-        var itemTotal = quantity * price;
-
-        totalItems += quantity;
-        totalPrice += itemTotal;
-
-        document.getElementById('divpr' + item).innerHTML = `
-            <button id="minus${item}" class="btn btn-primary minus">-</button>
-            <span id="val${item}">${quantity}</span>
-            <button id="plus${item}" class="btn btn-primary plus">+</button>`;
-        
-        cartItems += `<div class="product-card1 card align-items-center">
-            <div class="card-body">
-                <h5 class="card-title">${cart[item][1].slice(0, 20)}...</h5>
-                <h6 style="color: #ff0000">Rs. ${price} /-</h6>
-                <p>Quantity: ${quantity}</p>
-                <p>Total: Rs. ${itemTotal} /-</p>
-                <button id="minus${item}" class="btn btn-primary minus">-</button>
-                <span id="val${item}">${quantity}</span>
-                <button id="plus${item}" class="btn btn-primary plus">+</button>
-            </div>
-        </div>`;
+// Add and remove item functionality
+$('#items').on('click', 'button.decrease', function() {
+    var id = this.id.slice(8); // Change index based on the new button ID prefix
+    if (cart[id]) {
+        cart[id][0] = Math.max(0, cart[id][0] - 1);
+        if (cart[id][0] === 0) {
+            delete cart[id];
+        }
+        updateCart();
     }
+});
 
-    localStorage.setItem('cart', JSON.stringify(cart));
-    document.getElementById('cart').innerHTML = totalItems;
-    document.getElementById('cartItems').innerHTML = cartItems;
-
-    // Update the total price display
-    var totalPriceDiv = `<div class="total-price mt-4">
-                            <center><h4>Total Price: Rs. ${totalPrice} /-</h4></center>
-                         </div>`;
-    document.getElementById('cartItems').insertAdjacentHTML('beforeend', totalPriceDiv);
-
-    updatePopover(cart);
-}
-function updatePopover(cart) {
-    var popStr = "<div class='mx-2 my-2 d-flex flex-wrap'>";
-    var i = 1;
-    var totalPrice = 0;
-
-    for (var item in cart) {
-        var quantity = cart[item][0];
-        var price = cart[item][2];
-        var itemTotal = quantity * price;
-
-        // Format each cart item
-        popStr += `<div class="d-inline-block me-3 mb-2">
-                      <span><b>${i}</b>. ${cart[item][1].slice(0, 15)}... (Qty: ${quantity}, Total: Rs. ${itemTotal})</span>
-                   </div>`;
-        i += 1;
-        totalPrice += itemTotal;
+$('#items').on('click', 'button.increase', function() {
+    var id = this.id.slice(8); // Change index based on the new button ID prefix
+    if (cart[id]) {
+        cart[id][0] += 1;
+        updateCart();
     }
+});
 
-    if (i === 1) { // No items in cart
-        popStr += "<p><b>No item available in your cart</b></p></div><div class='mx-2 my-2'><a href='/shop'><button class='btn btn-primary'>Add items</button></a></div>";
+// Update quantity directly from input
+$('#items').on('change', 'input.qty-input', function() {
+    var id = this.id.slice(3);
+    var newQty = parseInt(this.value);
+    if (newQty > 0) {
+        cart[id][0] = newQty;
     } else {
-        // Add the total price and action buttons
-        popStr += `<div class='mt-2'>
-                      <h5>Total Price: Rs. ${totalPrice} /-</h5>
-                      <a href='/shop/checkout' class='btn btn-primary me-2' id='checkout'>Checkout</a>
-                      <a href='/shop/'><button class='btn btn-primary' onclick='clearCart()' id='clearCart'>Clear Cart</button></a>
-                   </div>`;
+        delete cart[id];
     }
+    updateCart();
+});
 
-    popStr += "</div>"; // Close the flex container
+// Delete item
+$('#items').on('click', 'i.remove-item', function() { // Update the selector to match the correct icon
+    var id = this.id.slice(6);
+    delete cart[id];
+    updateCart();
+});
 
-    document.getElementById("popcart").setAttribute('data-content', popStr);
-    $('#popcart').popover();
-}
-
-
-
-function clearCart() {
-    cart = JSON.parse(localStorage.getItem('cart'));
-    for (var item in cart) {
-        document.getElementById('divpr' + item).innerHTML = '<button id="pr' + item + '" class="btn btn-primary cart">Add to Cart</button>';
+// Prevent form submission if cart is empty
+$('#checkoutForm').on('submit', function(event) {
+    if (Object.keys(cart).length === 0) {
+        event.preventDefault(); // Prevent form submission
+        alert('Your cart is empty. Please add items to your cart before checking out.'); // Alert the user
     }
-    localStorage.clear();
-    cart = {};
-    updateCart(cart);
-}
+});
 
+// Handle form submission success
+{% if messages %}
+    {% for message in messages %}
+        alert('{{ message }}');
+    {% endfor %}
+    localStorage.removeItem('cart');
+    updateCart();
+{% endif %}
+
+// Function to show notifications
 function showNotification(message) {
     var notification = document.getElementById('notification');
     notification.innerText = message;
@@ -244,45 +448,23 @@ function showNotification(message) {
     }, 2000);
 }
 
-// Show subcategories on category click
-document.querySelectorAll('.category-link').forEach(link => {
-    link.addEventListener('click', function() {
-        var category = this.getAttribute('data-category');
-        var subcatList = document.getElementById('subcats-' + category);
-        var allSubcatLists = document.querySelectorAll('.subcategory-list');
-
-        allSubcatLists.forEach(list => {
-            if (list !== subcatList) {
-                list.style.display = 'none';
-            }
-        });
-
-        subcatList.style.display = subcatList.style.display === 'none' ? 'block' : 'none';
-    });
+// Clear cart functionality
+$('#clearCart').on('click', function() {
+    cart = {}; // Clear the cart object
+    localStorage.removeItem('cart'); // Remove cart from localStorage
+    $('#items').html(''); // Clear the cart items in the UI
+    $('#totalPrice').html('Rs. 0'); // Reset total price
+    alert('Your cart has been cleared.'); // Notify the user
 });
 
-// Filter products by subcategory
-document.querySelectorAll('.subcategory-link').forEach(link => {
-    link.addEventListener('click', function() {
-        var category = this.getAttribute('data-category');
-        var subcategory = this.getAttribute('data-subcategory');
-        document.querySelectorAll('.category-section').forEach(section => {
-            if (section.getAttribute('data-category') === category) {
-                section.style.display = 'block';
-                section.querySelectorAll('.subcategory-section').forEach(subSection => {
-                    if (subSection.getAttribute('data-subcategory') === subcategory) {
-                        subSection.style.display = 'block';
-                    } else {
-                        subSection.style.display = 'none';
-                    }
-                });
-            } else {
-                section.style.display = 'none';
-            }
-        });
-    });
+$('#refreshPage').on('click', function() {
+    location.reload(); // Refresh the page
 });
 
-updateCart(cart);
+// Initial cart update
+updateCart();
+
 </script>
+    
+    
 {% endblock %}

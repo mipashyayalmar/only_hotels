@@ -1,0 +1,742 @@
+
+{% extends 'shop/basic.html' %}
+
+{% block title %} Home {% endblock %}
+
+{% load static %}
+{% block body %}
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="{% static 'template/table_menu.css'%}">
+</head>
+<main-body>
+    <br><br><br><br>
+    <div id="notification" class="alert alert-primary" role="alert"></div><br>
+
+    <div class="sidebar" id="sidebar">
+        <div class="heading">
+            <h2>MENU</h2>
+        </div>
+        {% for category, subcats in allProds %}
+        <ul>
+            <li>
+                <a href="javascript:void(0)" class="category-link" data-category="{{ category }}">
+                    {{ category|upper }}
+                </a>
+            </li>
+            <ul class="subcategory-list" id="subcats-{{ category }}">
+                {% for subcategory, products in subcats %}
+                <li>
+                    <a href="javascript:void(0)" class="subcategory-link" data-category="{{ category }}" data-subcategory="{{ subcategory }}">
+                        {{ subcategory|title }}
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+        </ul>
+        {% endfor %}
+    </div>
+    
+
+    <div class="main-content" id="product-container">
+        <div class="search-bar">
+            <input type="text" id="search-input" placeholder="Search..." />
+            <button id="search-btn">Search</button>
+        </div>
+        {% for category, subcats in allProds %}
+        {% for subcategory, products in subcats %}
+        <div class="category" data-subcategory="{{ subcategory }}" style="display: none;">
+            {{ subcategory }}
+            <div class="menu-items">
+                {% for product in products %}
+                <div class="menu-items">
+                    <div>
+                        <h5 id="namepr{{ product.id }}" class="product-name card-title" style="display:none;">{{ product.product_name }}</h5>
+                        <h6 id="pricepr{{ product.id }}" class="product-price" style="color: #ff0000">Rs. {{ product.price }} /-</h6>
+                        <div id="divpr{{ product.id }}" class="divpr">
+                            <button id="pr{{ product.id }}" class="menu-item cart">{{ product.product_name }}</button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+        {% endfor %}
+    </div>
+
+
+    <div class="order-section">
+        <div class="order-header">
+            <div>
+                <button>DINE IN</button>
+                <button>DELIVERY</button>
+                <button>PICK UP</button>
+            </div>
+        </div>
+        <div class="order-list">
+
+
+
+            <div class="order-item" id="cartItems" >
+                <div class="item-info">
+                    <i class="fas hover-icon">&#xf057;</i>
+
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxyfAYJbrwD8B9Ls4P7avBb4K1qRWgAyjg&s" alt="" width="50" height="50"/>
+                    <div class="item-name">Brown Apple Betty</div>
+                </div>
+                <div class="item-quantity">
+                    <button>-</button>
+                    <input type="text" value="1"/>
+                    <button>+</button>
+                </div>
+                
+                <div class="original-item-price">$5.00
+                    <div class="item-price">$15.00</div>
+                </div>
+            </div>          
+        </div>
+        <div class="order-footer">
+            <button>SPLIT</button>
+            <button>Complimentary</button>
+            <div class="total_p_name">total : 
+                <div class="total_p">$26.00</div>
+            </div>
+        </div>
+        <div class="order-footer-payment">
+            <div class="payment-options">
+                <label>
+                    <input type="radio" name="payment" value="cash"> Cash
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="card"> Card
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="other"> Other
+                </label>
+            </div>
+        </div>
+        <div class="final-options">
+            <button>Save</button>
+            <button>Save & Print</button>
+            <button>Save & Bill</button>
+            <div class="print">
+                <button>KOT</button>
+                <button>KOT & Print</button>
+            </div>
+        </div>
+    </div>
+</main-body>
+<script>
+    
+</script>
+
+
+
+
+{% if user.is_authenticated %}
+<div class="order-section">
+    <div class="order-header">
+        <div>
+            <button>DINE IN</button>
+            <button>DELIVERY</button>
+            <button>PICK UP</button>
+        </div>
+    </div>
+
+    <div class="order-list">
+        <div class="order-item" >
+            <!-- Example of an item -->
+            <div class="item-info">
+                <i class="fas hover-icon">&#xf057;</i>
+                <img src="https://via.placeholder.com/50" alt="" width="50" height="50"/>
+                <div class="item-name">${cart[item][1]}</div>
+            </div>
+            <div class="item-quantity">
+                <button class="minus" id="minus${item}">-</button>
+                <input type="text" value="${quantity}" id="val${item}" readonly />
+                <button class="plus" id="plus${item}">+</button>
+            </div>
+            <div class="original-item-price">
+                $${price.toFixed(2)}
+                <div class="item-price">$${itemTotal.toFixed(2)}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="order-footer">
+        <button>SPLIT</button>
+        <button>Complimentary</button>
+        <div class="total_p_name">Total:
+            <div class="total_p" id="total-price">Rs. ${totalPrice} /-</div>
+        </div>
+    </div>
+
+    <div class="order-footer-payment">
+        <div class="payment-options">
+            <label>
+                <input type="radio" name="payment" value="cash"> Cash
+            </label>
+            <label>
+                <input type="radio" name="payment" value="card"> Card
+            </label>
+            <label>
+                <input type="radio" name="payment" value="other"> Other
+            </label>
+        </div>
+    </div>
+
+    <div class="final-options">
+        <button>Save</button>
+        <button>Save & Print</button>
+        <button>Save & Bill</button>
+        <div class="print">
+            <button>KOT</button>
+            <button>KOT & Print</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% if user.is_authenticated %}
+<div class="order-section">
+    <div class="order-header">
+        <div>
+            <button>DINE IN</button>
+            <button>DELIVERY</button>
+            <button>PICK UP</button>
+        </div>
+    </div>
+
+    <div class="order-list">
+        <div class="order-item" id="items">
+            <!-- Example of an item, rendered dynamically -->
+            {% for item, details in cart.items %}
+            <div class="item-info">
+                <i class="fas hover-icon">&#xf057;</i>
+                <img src="https://via.placeholder.com/50" alt="" width="50" height="50"/>
+                <div class="item-name">{{ details.0 }}</div> <!-- Item name -->
+            </div>
+            <div class="item-quantity">
+                <button class="minus" id="minus{{ forloop.counter }}">-</button>
+                <input type="text" value="{{ details.1 }}" id="val{{ forloop.counter }}" readonly />
+                <button class="plus" id="plus{{ forloop.counter }}">+</button>
+            </div>
+            <div class="item-price">$${{ details.3|floatformat:2 }}</div> <!-- Use pre-computed total price -->
+
+
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="order-footer">
+        <button>SPLIT</button>
+        <button>Complimentary</button>
+        <div class="total_p_name">Total:
+            <div class="total_p" id="total-price">Rs. {{ totalPrice }} /-</div>
+        </div>
+    </div>
+
+    <div class="order-footer-payment">
+        <div class="payment-options">
+            <label>
+                <input type="radio" name="payment" value="cash"> Cash
+            </label>
+            <label>
+                <input type="radio" name="payment" value="card"> Card
+            </label>
+            <label>
+                <input type="radio" name="payment" value="other"> Other
+            </label>
+        </div>
+    </div>
+
+    <div class="final-options">
+        <button>Save</button>
+        <button>Save & Print</button>
+        <button>Save & Bill</button>
+        <div class="print">
+            <button>KOT</button>
+            <button>KOT & Print</button>
+        </div>
+    </div>
+
+    <div class="col my-4">
+        <span id="info">
+        <h2>Enter Address & Other Details</h2>
+        <form method="post" action="/shop/checkout/" id="checkoutForm">{% csrf_token %}
+            <input type="hidden" name="itemsJson" id="itemsJson">
+            <input type="hidden" name="amount" id="amount" value="{{ totalPrice }}">
+            <input type="hidden" name="user_id" id="user_id" value="{{ request.user.id }}">
+            <div class="form-group">
+                <label for="address">Address</label>
+                <input type="text" class="form-control" id="address" name="address" placeholder="Bhandishegaon" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" class="form-control" id="phone" name="phone" placeholder="9172353945" required pattern="[0-9]{10}">
+            </div>
+            <div class="alert alert-info">
+                <strong>Info!</strong> Online payments are currently disabled, so please choose cash on delivery.
+            </div>
+            <button type="submit" class="btn btn-primary" name="onlinePay" disabled>Online Pay</button>
+            <button type="submit" class="btn btn-primary" name="cashOnDelivery">Cash On Delivery</button>
+        </form>
+        </span>
+    </div>
+</div>
+
+{% else %}
+    <div id="cont2">
+        <div class="alert alert-info">
+            <font style="font-size:22px"><center>Before checkout you need to <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">Login</a></strong></center></font>
+        </div>
+    </div>
+{% endif %}
+
+
+
+
+
+
+
+
+
+
+
+
+<div class="order-section">
+    <div class="order-header">
+        <div>
+            <button id="refreshCart"><i class="fa fa-search" aria-hidden="true"></i> CHECK IN</button>
+            <button>DELIVERY</button>
+            <button>PICK UP</button>
+        </div>
+    </div>
+    <div class="order-list">
+        <ul class="list-group" id="items">
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <button id="delete${item}" class="btn btn-danger btn-sm delete">X</button>
+                <a href='/shop/search/?search=${name}' class='alert-link'><span>${++i}: ${name}</span></a>
+                <span>
+                    <button id="minus${item}" class="btn btn-primary btn-sm minus">-</button>
+                    <input type="number" id="val${item}" class="form-control qty-input" value="${qty}" min="0">
+                    <button id="plus${item}" class="btn btn-primary btn-sm plus">+</button>
+                    x Rs. ${itemPrice} = Rs. ${itemTotal}
+                </span>
+            </li>
+        </ul>
+    </div>
+    <div class="order-footer">
+        <button><a href='/shop/' onclick='clearCart()' id='clearCart' class="clear-cart">Clear Cart</a></button>
+        <button>Complimentary</button>
+        <li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
+            <span>TOTAL PRICE:</span>
+            <span class="badge badge-danger badge-pill" id="totalPrice">Rs. ${totalPrice} /-</span>
+        </li>
+    </div>
+    <div class="order-footer-payment">
+        <div class="payment-options">
+            <label>
+                <input type="radio" name="payment" value="cash" checked> Cash
+            </label>
+            <label>
+                <input type="radio" name="payment" value="card"> Card
+            </label>
+            <label>
+                <input type="radio" name="payment" value="other"> Other
+            </label>
+        </div>
+    </div>
+    <div class="final-options">
+        <button>Save</button>
+        <button>Save & Print</button>
+        <button>Save & Bill</button>
+        <div class="print">
+            <button>KOT</button>
+            <button>KOT & Print</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+{% comment %} scrit 
+
+{% endcomment %}
+]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% comment %} form the chekcout  {% endcomment %}
+<!-- Add a refresh button -->
+
+{% comment %} 
+<script>
+    // Initialize cart from localStorage
+    if (localStorage.getItem('cart') == null) {
+        var cart = {};
+    } else {
+        cart = JSON.parse(localStorage.getItem('cart'));
+    }
+
+    // Function to update only the specific cart item UI
+    function updateCartItem(itemId) {
+        var [qty, name, itemPrice] = cart[itemId];
+        var sumPrice = qty * itemPrice;
+
+        // Update the item's quantity and total price in the UI
+        $(`#val-${itemId}`).val(qty);
+        $(`#price-${itemId}`).html(`Rs. ${sumPrice}`);
+
+        // Update total cart price
+        updateTotalPrice();
+    }
+
+    // Function to update the total price only
+    function updateTotalPrice() {
+        var totalPrice = 0;
+        for (var item in cart) {
+            var sumPrice = cart[item][0] * cart[item][2];
+            totalPrice += sumPrice;
+        }
+        $('#totalPrice').html(`Rs. ${totalPrice}`);
+        localStorage.setItem('cart', JSON.stringify(cart));
+    }
+
+    // Function to initialize the cart UI
+    function initializeCart(cart) {
+        var cartItems = '';
+
+        for (var item in cart) {
+            var [qty, name, itemPrice] = cart[item];
+            var sumPrice = qty * itemPrice;
+
+            cartItems += `
+                <li class="order-item list-group-item d-flex justify-content-between align-items-center" id="item-${item}">
+                    <div class="item-info">
+                        <i class="fas hover-icon remove-item" id="remove-${item}" style="cursor: pointer;">&#xf057;</i>
+                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxyfAYJbrwD8B9Ls4P7avBb4K1qRWgAyjg&s" alt="" width="50" height="50"/>
+                        <div class="item-name">${name}</div>
+                    </div>
+                    <div class="item-quantity">
+                        <button id="minus-${item}" class="btn btn-primary btn-sm minus">-</button>
+                        <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
+                        <button id="plus-${item}" class="btn btn-primary btn-sm plus">+</button>
+                    </div>
+                    <div class="original-item-price">
+                        Rs. ${itemPrice}
+                        <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
+                    </div>
+                </li>`;
+        }
+
+        $('#items').html(cartItems);
+        updateTotalPrice();
+    }
+
+    // Initial call to initialize the cart
+    initializeCart(cart);
+
+    // Add functionality for increasing/decreasing quantity
+    $('#items').on('click', 'button.minus', function() {
+        var id = this.id.split('-')[1];
+        cart[id][0] = Math.max(0, cart[id][0] - 1);
+        if (cart[id][0] == 0) {
+            delete cart[id];
+            $(`#item-${id}`).remove(); // Remove the item if quantity is zero
+        } else {
+            updateCartItem(id); // Update only the specific item
+        }
+    });
+
+    $('#items').on('click', 'button.plus', function() {
+        var id = this.id.split('-')[1];
+        cart[id][0] += 1;
+        updateCartItem(id); // Update only the specific item
+    });
+
+    // Update quantity directly from input field
+    $('#items').on('change', 'input.qty-input', function() {
+        var id = this.id.split('-')[1];
+        var newQty = parseInt(this.value);
+        if (newQty > 0) {
+            cart[id][0] = newQty;
+            updateCartItem(id); // Update only the specific item
+        } else {
+            delete cart[id];
+            $(`#item-${id}`).remove(); // Remove the item if quantity is zero
+        }
+    });
+
+    // Functionality to remove an item when clicking the remove icon
+    $('#items').on('click', '.remove-item', function() {
+        var id = this.id.split('-')[1];
+        delete cart[id];
+        $(`#item-${id}`).remove(); // Remove the item from the UI
+        updateTotalPrice(); // Update the total price after removal
+    });
+
+    // Prevent form submission if cart is empty
+    $('#checkoutForm').on('submit', function(event) {
+        if (Object.keys(cart).length === 0) {
+            event.preventDefault();
+            alert('Your cart is empty. Please add items before checkout.');
+        }
+    });
+
+    // Refresh button functionality
+    $('#refreshCart').on('click', function() {
+        initializeCart(cart); // Re-initialize the cart UI on button click
+    });
+</script> {% endcomment %}
+
+    
+
+<li class="order-item list-group-item d-flex justify-content-between align-items-center" >
+    <div class="item-info">
+        <i class="fas hover-icon remove-item" id="delete${item}" style="cursor: pointer;">&#xf057;</i>
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxyfAYJbrwD8B9Ls4P7avBb4K1qRWgAyjg&s" alt="" width="50" height="50"/>
+        <div class="item-name"><a href='/shop/search/?search=${name}' class='alert-link'><span>${++i}: ${name}</span></a></div>
+    </div>
+    <div class="item-quantity">
+        <button id="minus${item}"  class="btn btn-primary btn-sm minus">-</button>
+        <input type="number" id="val${item}"  class="form-control qty-input" value="${qty}" min="0"/>
+        <button id="plus${item}" class="btn btn-primary btn-sm plus">+</button>
+                    x Rs. ${itemPrice} = Rs. ${itemTotal}
+    </div>
+    <div class="original-item-price">
+        Rs. ${itemPrice}
+        <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
+    </div>
+</li>
+
+
+
+
+
+
+
+
+
+
+<li class="order-item list-group-item d-flex justify-content-between align-items-center" >
+    <div class="item-info">
+        <i class="fas hover-icon remove-item" id="remove-${item}" style="cursor: pointer;">&#xf057;</i>
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxyfAYJbrwD8B9Ls4P7avBb4K1qRWgAyjg&s" alt="" width="50" height="50"/>
+        <div class="item-name">${name}</div>
+    </div>
+    <div class="item-quantity">
+        <button id="minus-${item}" class="btn btn-primary btn-sm minus">-</button>
+        <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
+        <button id="plus-${item}" class="btn btn-primary btn-sm plus">+</button>
+    </div>
+    <div class="original-item-price">
+        Rs. ${itemPrice}
+        <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
+    </div>
+</li>`
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    
+    // Initialize cart from localStorage
+    if (localStorage.getItem('cart') == null) {
+       var cart = {};
+   } else {
+       cart = JSON.parse(localStorage.getItem('cart'));
+   }
+
+   // Function to update only the specific cart item UI
+   function updateCartItem(itemId) {
+       var [qty, name, itemPrice] = cart[itemId];
+       var sumPrice = qty * itemPrice;
+
+       // Update the item's quantity and total price in the UI
+       $(`#val-${itemId}`).val(qty);
+       $(`#price-${itemId}`).html(`Rs. ${sumPrice}`);
+
+       // Update total cart price
+       updateTotalPrice();
+   }
+
+   // Function to update the total price only
+   function updateTotalPrice() {
+       var totalPrice = 0;
+       for (var item in cart) {
+           var sumPrice = cart[item][0] * cart[item][2];
+           totalPrice += sumPrice;
+       }
+       $('#totalPrice').html(`Rs. ${totalPrice}`);
+       localStorage.setItem('cart', JSON.stringify(cart));
+   }
+
+   // Function to initialize the cart UI
+   function initializeCart(cart) {
+       var cartItems = '';
+
+       for (var item in cart) {
+           var [qty, name, itemPrice] = cart[item];
+           var sumPrice = qty * itemPrice;
+
+           cartItems += `
+               <li class="order-item list-group-item d-flex justify-content-between align-items-center" id="item-${item}">
+                   <div class="item-info">
+                       <i class="fas hover-icon remove-item" id="remove-${item}" style="cursor: pointer;">&#xf057;</i>
+                       <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxyfAYJbrwD8B9Ls4P7avBb4K1qRWgAyjg&s" alt="" width="50" height="50"/>
+                       <div class="item-name">${name}</div>
+                   </div>
+                   <div class="item-quantity">
+                       <button id="minus-${item}" class="btn btn-primary btn-sm minus">-</button>
+                       <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
+                       <button id="plus-${item}" class="btn btn-primary btn-sm plus">+</button>
+                   </div>
+                   <div class="original-item-price">
+                       Rs. ${itemPrice}
+                       <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
+                   </div>
+               </li>`;
+       }
+
+       cartItems += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
+        <span>TOTAL PRICE:</span>
+        <span class="badge badge-danger badge-pill" id="totalPrice">Rs. ${totalPrice} /-</span>
+    </li>`;
+
+$('#items').html(cartItems);
+localStorage.setItem('cart', JSON.stringify(cart));
+$('#itemsJson').val(JSON.stringify(cart));
+$('#amount').val(totalPrice);
+}
+
+
+   // Initial call to initialize the cart
+   initializeCart(cart);
+
+   // Add functionality for increasing/decreasing quantity
+   $('#items').on('click', 'button.minus', function() {
+       var id = this.id.split('-')[1];
+       cart[id][0] = Math.max(0, cart[id][0] - 1);
+       if (cart[id][0] == 0) {
+           delete cart[id];
+           $(`#item-${id}`).remove(); // Remove the item if quantity is zero
+       } else {
+           updateCartItem(id); // Update only the specific item
+       }
+   });
+
+   $('#items').on('click', 'button.plus', function() {
+       var id = this.id.split('-')[1];
+       cart[id][0] += 1;
+       updateCartItem(id); // Update only the specific item
+   });
+
+   // Update quantity directly from input field
+   $('#items').on('change', 'input.qty-input', function() {
+       var id = this.id.split('-')[1];
+       var newQty = parseInt(this.value);
+       if (newQty > 0) {
+           cart[id][0] = newQty;
+           updateCartItem(id); // Update only the specific item
+       } else {
+           delete cart[id];
+           $(`#item-${id}`).remove(); // Remove the item if quantity is zero
+       }
+   });
+
+   // Functionality to remove an item when clicking the remove icon
+   $('#items').on('click', '.remove-item', function() {
+       var id = this.id.split('-')[1];
+       delete cart[id];
+       $(`#item-${id}`).remove(); // Remove the item from the UI
+       updateTotalPrice(); // Update the total price after removal
+   });
+
+   // Prevent form submission if cart is empty
+   $('#checkoutForm').on('submit', function(event) {
+       if (Object.keys(cart).length === 0) {
+           event.preventDefault();
+           alert('Your cart is empty. Please add items before checkout.');
+       }
+   });
+
+   // Refresh button functionality
+   $('#refreshCart').on('click', function() {
+       initializeCart(cart); // Re-initialize the cart UI on button click
+   });
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div class="original-item-price">
+        Rs. ${itemPrice}
+        <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
+    </div>
+</li>

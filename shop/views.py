@@ -12,6 +12,9 @@ from PayTm import Checksum
 MERCHANT_KEY = 'kbzk1DSbJiV_O3p5';   
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
+from django.shortcuts import render, redirect
+from .models import Advertise
+from .forms import AdvertiseForm
 
 
 def index(request):
@@ -28,9 +31,6 @@ def index(request):
     context = {'allProds': allProds}
     return render(request, 'shop/index1.html', context)
 
-from django.shortcuts import render, redirect
-from .models import Advertise
-from .forms import AdvertiseForm
 
 def advertise(request):
     if request.method == 'POST':
@@ -155,6 +155,9 @@ def search(request):
     
     return render(request, 'shop/search.html', context)
 
+
+
+
 def checkout(request):
     if request.method == "POST":
         if 'order_lookup' in request.POST:
@@ -177,23 +180,24 @@ def checkout(request):
         else:
             # Handle the standard checkout process
             user_id = request.POST.get('user_id', '')
+            name = request.POST.get('name', '')  # Capture the name field
+            email = request.POST.get('email', '')  # Capture the email field
+            city = request.POST.get('city', '')  # Capture the city field
+            state = request.POST.get('state', '')  # Capture the state field
+            zip_code = request.POST.get('zip_code', '')  # Capture the zip code field
+
             if not user_id:
                 messages.error(request, 'User ID is required.')
-                return redirect('shop:checkout')
+                return redirect('shop:index')
 
             try:
                 user_id = int(user_id)
             except ValueError:
                 messages.error(request, 'Invalid User ID.')
-                return redirect('shop:checkout')
+                return redirect('shop:index')
 
-            name = request.POST.get('name', '')
-            email = request.POST.get('email', '')
             address = request.POST.get('address1', '') + " " + request.POST.get('address2', '')
-            city = request.POST.get('city', '')
-            state = request.POST.get('state', '')
-            zip_code = request.POST.get('zip_code', '')
-            phone = request.POST.get('phone', '')
+            phone = request.POST.get('phone', '9172353945')  # Default phone if none is provided
             items_json = request.POST.get('itemsJson', '')
             amount = request.POST.get('amount', '')
             order_action = request.POST.get('order_action', 'new')
@@ -203,71 +207,59 @@ def checkout(request):
                 amount = float(amount) if amount else 0.0
             except ValueError:
                 messages.error(request, 'Invalid amount.')
-                return redirect('shop:checkout')
+                return redirect('shop:index')
 
             # Store customer data in session
             request.session['customer_data'] = {
                 'user_id': user_id,
                 'name': name,
                 'email': email,
-                'address': address,
                 'city': city,
                 'state': state,
                 'zip_code': zip_code,
+                'address': address,
                 'phone': phone
             }
-
-            # Debugging output
-            print("Received POST data:")
-            print("User ID:", user_id)
-            print("Name:", name)
-            print("Email:", email)
-            print("Address:", address)
-            print("City:", city)
-            print("State:", state)
-            print("Zip Code:", zip_code)
-            print("Phone:", phone)
-            print("Items JSON:", items_json)
-            print("Amount:", amount)
-            print("Order Action:", order_action)
 
             if order_action == 'update':
                 order_id = request.POST.get('order_id', '')
                 try:
                     order = Orders.objects.get(order_id=order_id, userId=user_id)
+                    # Update fields
                     order.items_json = items_json
+                    order.address = address
+                    order.phone = phone
+                    order.amount = amount
                     order.name = name
                     order.email = email
-                    order.address = address
                     order.city = city
                     order.state = state
                     order.zip_code = zip_code
-                    order.phone = phone
-                    order.amount = amount
                     order.save()
 
                     update = OrderUpdate(order_id=order.order_id, update_desc="The Order has been Updated")
                     update.save()
 
                     messages.success(request, f"Order {order.order_id} successfully updated.")
-                    id = order.order_id
+                    return redirect('shop:orderView')  # Redirect to order view
+
                 except Orders.DoesNotExist:
                     messages.error(request, 'Order not found or invalid.')
-                    return redirect('shop:checkout')
+                    return redirect('shop:index')
 
             else:
                 # Create a new order
                 order = Orders(
                     items_json=items_json,
                     userId=user_id,
+                    address=address,
+                    phone=phone,
+                    amount=amount,
                     name=name,
                     email=email,
-                    address=address,
                     city=city,
                     state=state,
-                    zip_code=zip_code,
-                    phone=phone,
-                    amount=amount
+                    zip_code=zip_code
                 )
                 order.save()
 
@@ -275,7 +267,7 @@ def checkout(request):
                 update.save()
 
                 messages.success(request, f"Order {order.order_id} successfully created.")
-                id = order.order_id
+                return redirect('shop:orderView')  # Redirect to order view
 
             if 'onlinePay' in request.POST:
                 # Handle online payment
@@ -283,7 +275,7 @@ def checkout(request):
                     'MID': 'WorldP64425807474247',  # Your-Merchant-Id-Here
                     'ORDER_ID': str(order.order_id),
                     'TXN_AMOUNT': str(amount),
-                    'CUST_ID': email,
+                    'CUST_ID': '',  # Removed email
                     'INDUSTRY_TYPE_ID': 'Retail',
                     'WEBSITE': 'WEBSTAGING',
                     'CHANNEL_ID': 'WEB',
@@ -293,10 +285,9 @@ def checkout(request):
                 return render(request, 'shop/paytm.html', {'darshan_dict': darshan_dict})
 
             elif 'cashOnDelivery' in request.POST:
-                return render(request, 'shop/checkout.html', {'thank': True, 'id': id})
+                return redirect('shop:orderView')
 
     return render(request, 'shop/checkout.html')
-
 
 def productView(request, myid):
     product = get_object_or_404(Product, id=myid)

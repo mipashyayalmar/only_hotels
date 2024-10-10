@@ -30,19 +30,25 @@ class Contact(models.Model):
         return self.name
 
 
+
+
 class Orders(models.Model):
     order_id = models.AutoField(primary_key=True)
     items_json = models.CharField(max_length=5000)
     userId = models.IntegerField(default=0)
     amount = models.IntegerField(default=0)
-    name = models.CharField(max_length=90)
-    email = models.CharField(max_length=111)
-    address = models.CharField(max_length=111)
-    city = models.CharField(max_length=111)
-    state = models.CharField(max_length=111)
-    zip_code = models.CharField(max_length=111)
-    phone = models.CharField(max_length=111, default="")
+    name = models.CharField(max_length=90, null=True, blank=True)  # Updated
+    email = models.CharField(max_length=111, null=True, blank=True)  # Updated
+    address = models.CharField(max_length=111, null=True, blank=True)  # Updated
+    city = models.CharField(max_length=111, null=True, blank=True)  # Updated
+    state = models.CharField(max_length=111, null=True, blank=True)  # Updated
+    zip_code = models.CharField(max_length=111, null=True, blank=True)  # Updated
+    phone = models.CharField(max_length=111, default="", null=True, blank=True)  # Updated
     timestamp = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return f"Order {self.order_id}"
+
 
 
 class OrderUpdate(models.Model):

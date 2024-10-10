@@ -18,7 +18,9 @@ urlpatterns = [
     path('search/', views.search, name="Search"),
     path('checkout/', views.checkout, name="checkout"),
     path('productView/<int:myid>/', views.productView, name="productView"),
-    path('orderView/', views.orderView, name="orderView"),  # This should match the view name
+    path('orderView/', views.orderView, name="orderView"),
+
+
     path('handlerequest/', views.handlerequest, name="HandleRequest"),
 
     path('reset_password/',

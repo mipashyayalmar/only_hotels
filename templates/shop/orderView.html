@@ -1,5 +1,5 @@
 {% extends 'shop/basic.html' %}
-{% block title%} Orders - Food Mania{% endblock %}
+{% block title %} Orders - Food Mania {% endblock %}
 
 {% load static %}
 {% block css %}
@@ -8,7 +8,7 @@
 
 {% block body %}
 {% if user.is_authenticated %}
-<div class="container" id="cont" style=" padding-bottom: 89px;">
+<div class="container" id="cont" style="padding-bottom: 89px;">
     <div class="table-wrapper">
         <div class="table-title">
             <div class="row">
@@ -33,9 +33,6 @@
                 <tr>
                     <th>No.</th>
                     <th>Order Id</th>
-                    <th>Name</th>
-                    <th>Address</th>
-                    <th>Email</th>
                     <th>Phone</th>
                     <th>Order Date</th>
                     <th>Amount</th>
@@ -48,9 +45,6 @@
                 <tr>
                     <td class="count"></td>
                     <td>{{ i.order_id }}</td>
-                    <td>{{ i.name }}</td>
-                    <td data-toggle="tooltip" title="{{ i.address }}">{{ i.address|slice:"0:25" }}..</td>
-                    <td>{{ i.email }}</td>
                     <td>{{ i.phone }}</td>
                     <td>{{ i.timestamp }}</td>
                     <td>{{ i.amount }}</td>
@@ -66,7 +60,7 @@
                 Selected Date For Check Amount:
                 <span class="badge badge-danger badge-pill" style="font-size: 19px;">Rs. {{ total_amount }}</span>
             </li>
-            
+        </div>
     </div>
 </div>
 {% else %}
@@ -87,9 +81,6 @@ $(document).ready(function() {
         let orderDetails = `
             <div>
                 <b>Order Id: {{i.order_id}}</b><br>
-                <b>Name: {{i.name}}</b><br>
-                <b>Address: {{i.address}}</b><br>
-                <b>Email: {{i.email}}</b><br>
                 <b>Phone: {{i.phone}}</b><br>
                 <b>Timestamp: {{i.timestamp}}</b>
             </div>
@@ -170,124 +161,5 @@ $(document).ready(function() {
         $('#popcart').attr('data-content', popStr);
     }
 });
-
-
-function updatePopover(cart) {
-    var popStr = "<h5> Click <a href='/shop/checkout'><button class='btn btn-primary'>Here</button></a> to order </h5><div class='mx-2 my-2'>";
-    var i = 1;
-    var total = 0;
-    for (var item in cart) {
-        popStr += `<b>${i++}</b>. ${cart[item][1]} / ${cart[item][3]}... Qty: ${cart[item][0]}<br>`;
-        total += cart[item][0] * cart[item][2];
-    }
-    popStr += `<br><b>Total = ${total}</b>`;
-    document.getElementById("popcart").setAttribute('data-content', popStr);
-    $('#popcart').popover();
-}
-
-// Initialize cart from localStorage
-var cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
-updateCart(cart);
-
-$('.container').on('click', 'button.cart', function() {
-    var idstr = this.id.toString();
-    if (cart[idstr] != undefined) {
-        cart[idstr][0] += 1;
-        showNotification(`${cart[idstr][1]} quantity increased to ${cart[idstr][0]}`);
-    } else {
-        var name = document.getElementById(`namepr${idstr}`).innerHTML;
-        var price = document.getElementById(`pricepr${idstr}`).innerHTML;
-        var langName = document.getElementById(`langnamepr${idstr}`).innerHTML;
-        cart[idstr] = [1, name, parseInt(price), langName];
-        showNotification(`${cart[idstr][1]} added to cart`);
-    }
-    updateCart(cart);
-});
-
-function updateCart(cart) {
-    // Merging old and new cart data
-    for (var item in cart) {
-        if (cartData[item] != undefined) {
-            cartData[item][0] += cart[item][0];
-        } else {
-            cartData[item] = cart[item];
-        }
-    }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updatePopover(cart);
-    renderCartItems();
-}
-
-function showNotification(message) {
-    var alertBox = document.createElement('div');
-    alertBox.className = 'alert alert-success';
-    alertBox.innerHTML = message;
-    document.querySelector('.container').insertBefore(alertBox, document.querySelector('.container').firstChild);
-
-    setTimeout(function() {
-        alertBox.remove();
-    }, 2000);
-}
-
-
-
-
-
-function updatePopover(cart) {
-    var popStr = "<h5> Click <a href='/shop/checkout'><button class='btn btn-primary'>Here</button></a> to order </h5><div class='mx-2 my-2'>";
-    var i = 1;
-    var total = 0;
-    for (var item in cart) {
-        popStr += `<b>${i++}</b>. ${cart[item][1]} / ${cart[item][3]}... Qty: ${cart[item][0]}<br>`;
-        total += cart[item][0] * cart[item][2];
-    }
-    popStr += `<br><b>Total = ${total}</b>`;
-    document.getElementById("popcart").setAttribute('data-content', popStr);
-    $('#popcart').popover();
-}
-
-// Initialize cart from localStorage
-var cart = localStorage.getItem('cart') ? JSON.parse(localStorage.getItem('cart')) : {};
-updateCart(cart);
-
-$('.container').on('click', 'button.cart', function() {
-    var idstr = this.id.toString();
-    if (cart[idstr] != undefined) {
-        cart[idstr][0] += 1;
-        showNotification(`${cart[idstr][1]} quantity increased to ${cart[idstr][0]}`);
-    } else {
-        var name = document.getElementById(`namepr${idstr}`).innerHTML;
-        var price = document.getElementById(`pricepr${idstr}`).innerHTML;
-        var langName = document.getElementById(`langnamepr${idstr}`).innerHTML;
-        cart[idstr] = [1, name, parseInt(price), langName];
-        showNotification(`${cart[idstr][1]} added to cart`);
-    }
-    updateCart(cart);
-});
-
-function updateCart(cart) {
-    // Merging old and new cart data
-    for (var item in cart) {
-        if (cartData[item] != undefined) {
-            cartData[item][0] += cart[item][0];
-        } else {
-            cartData[item] = cart[item];
-        }
-    }
-    localStorage.setItem('cart', JSON.stringify(cart));
-    updatePopover(cart);
-    renderCartItems();
-}
-
-function showNotification(message) {
-    var alertBox = document.createElement('div');
-    alertBox.className = 'alert alert-success';
-    alertBox.innerHTML = message;
-    document.querySelector('.container').insertBefore(alertBox, document.querySelector('.container').firstChild);
-
-    setTimeout(function() {
-        alertBox.remove();
-    }, 2000);
-}
 </script>
 {% endblock %}
