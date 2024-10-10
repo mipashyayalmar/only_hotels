@@ -111,18 +111,20 @@
             <ul class="list-group" id="items"></ul>
         </div>
         <div class="order-footer">
-            <button><a href='/shop/' onclick='clearCart()' id='clearCart' class="clear-cart">Clear Cart</a></button>
+            <button id="clearCart">Clear Cart</button>
             <button id="refreshPage" class="btn btn-secondary">Final Check</button>
-
             <li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
                 <span>TOTAL PRICE:</span>
-                <span class="badge badge-danger badge-pill" id="totalPrice">Rs. 0 /-</span> <!-- Updated span -->
+                <span class="badge badge-danger badge-pill" id="totalPrice">Rs. 0 /-</span>
             </li>
         </div>
         <div class="order-footer-payment">
             <div class="payment-options">
                 <label>
                     <input type="radio" name="payment" value="cash" checked> Cash
+                </label>
+                <label>
+                    <input type="radio" name="payment" value="other"> Online
                 </label>
                 <label>
                     <input type="radio" name="payment" value="card"> Card
@@ -132,55 +134,172 @@
                 </label>
             </div>
         </div>
-        <div class="final-options">
-            <span id="info">
-                <form method="post" action="/shop/checkout/" id="checkoutForm">
-                    {% csrf_token %}
-                    <input type="hidden" name="itemsJson" id="itemsJson">
-                    <input type="hidden" name="amount" id="amount">
-                    <input type="hidden" name="user_id" id="user_id" value="{{ request.user.id }}">
-                    <div class="form-group" style="display:none;">
-                        <label for="address">Address</label>
-                        <input type="text" class="form-control" id="address" name="address" placeholder="Bhandishegaon" value="Bhandishegaon" required>
-                    </div>
-                    <div class="form-group" style="display:none;">
-                        <label for="phone">Phone Number</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" placeholder="9172353945" value="9172353945" required pattern="[0-9]{10}">
-                    </div>
-                    <div class="print">
-                        <button type="submit" name="cashOnDelivery">Save</button>
-                    </div>
-                </form>
-                <div class="print">
-                    <button>Save & Print</button>
-                    <button>Save & Bill</button>
-                    <button>KOT</button>
-                    <button>KOT & Print</button>
-                </div>
-            </span>
-        </div>
-    </div>
-    
-    {% if user.is_authenticated %}
         
-        <div class="">
-           
-        </div>
-    </div>
+        <!-- Print Button -->
+        
     
-    {% else %}
-    <div id="cont2">
-        <div class="alert alert-info">
-            <font style="font-size:22px"><center>Before checkout you need to <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">Login</a></strong></center></font>
+        {% if user.is_authenticated %}
+        <div class="final-options">
+            <form method="post" action="/shop/checkout/" id="checkoutForm">
+                {% csrf_token %}
+                <input type="hidden" name="itemsJson" id="itemsJson">
+                <input type="hidden" name="amount" id="amount">
+                <input type="hidden" name="user_id" id="user_id" value="{{ request.user.id }}">
+                
+                <div class="print">
+                    <button type="submit" name="action" value="save">Save</button>
+                    <button class="btn btn-info" id="printCartItems"> Save & Print</button>
+                </div>
+            </form>
+        
+            <div class="print">
+                <button id="printReceipt">Counter Print</button>
+                <button type="submit" name="action" value="save_bill">Save & Bill</button>
+                <button type="submit" name="action" value="kot">KOT</button>
+                <button type="submit" name="action" value="kot_print">KOT & Print</button>
+            </div>
         </div>
-    </div>
-    {% endif %}
+        
+        {% else %}
+        <div id="cont2">
+            <div class="alert alert-info">
+                <font style="font-size:22px"><center>Before Save you need to <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">Login</a></strong></center></font>
+            </div>
+        </div>
+        {% endif %}
 </main-body>
 <script src="{% static 'template/table_menu.js' %}"></script>
 {% endblock %}
 
 {% block js %}
 
+<script>
+    // Function to print the cart items
+    function printCartItems() {
+        let items = document.querySelectorAll('#items li');
+        let totalPriceText = document.getElementById('totalPrice').innerText;
+
+        let printWindow = window.open('', 'Print Order', 'width=600,height=400');
+        printWindow.document.write('<html><head><title>ROYAL SHETKARI</title>');
+        printWindow.document.write('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">');
+        printWindow.document.write('<style>@media print { @page { size: auto; margin: 10mm; } .no-print { display: none; } }</style>');
+        printWindow.document.write('</head><body>');
+
+        printWindow.document.write('<div class="container">');
+        printWindow.document.write('<h3>Your Cart Items</h3>');
+
+        let subtotal = 0;
+        let totalQuantity = 0;
+        let itemCount = 0;
+
+        printWindow.document.write('<ul class="list-group">');
+        items.forEach((item) => {
+            let itemName = item.querySelector('.item-name') ? item.querySelector('.item-name').innerText : 'Unknown';
+            let itemQty = item.querySelector('.qty-input') ? parseInt(item.querySelector('.qty-input').value) : 0;
+            let itemPrice = item.querySelector('.original-item-price') ? parseFloat(item.querySelector('.original-item-price').innerText.replace('Rs. ', '').trim()) : 0;
+
+            if (itemName === 'Unknown' || itemQty === 0) return;
+
+            itemCount++;
+            let itemTotal = itemQty * itemPrice;
+
+            printWindow.document.write('<li class="list-group-item d-flex justify-content-between align-items-center">' +
+                itemCount + ': ' + itemName +
+                '<span>(Qty: ' + itemQty +
+                ', Unit Price: Rs. ' + itemPrice.toFixed(2) +
+                ', Total: Rs. ' + itemTotal.toFixed(2) + ')</span></li>');
+            
+            subtotal += itemTotal;
+            totalQuantity += itemQty;
+        });
+        printWindow.document.write('</ul>');
+
+        printWindow.document.write('<div class="d-flex justify-content-between align-items-center mt-3">');
+        printWindow.document.write('<strong>Total Quantity: ' + totalQuantity + '</strong>');
+        printWindow.document.write('</div>');
+        printWindow.document.write('<div class="d-flex justify-content-between align-items-center mt-3">');
+        printWindow.document.write('<strong>Total Price (with tax): Rs. ' + totalPriceText.replace('Rs. ', '').trim() + '</strong>');
+        printWindow.document.write('</div>');
+        printWindow.document.write('</div></body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }
+
+    // Function to print the receipt with order details
+    function printReceipt() {
+        let items = document.querySelectorAll('#items li');
+        let totalPriceText = document.getElementById('totalPrice').innerText;
+
+        let printWindow = window.open('', 'Print Receipt', 'width=600,height=400');
+        printWindow.document.write('<html><head><title>Receipt</title>');
+        printWindow.document.write('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">');
+        printWindow.document.write('<style>@media print { @page { size: auto; margin: 10mm; } .no-print { display: none; } }</style>');
+        printWindow.document.write('</head><body>');
+
+        printWindow.document.write('<div class="container">');
+        printWindow.document.write('<h3>Order Receipt</h3>');
+
+        let subtotal = 0;
+        let totalQuantity = 0;
+        let itemCount = 0;
+
+        printWindow.document.write('<ul class="list-group">');
+        items.forEach((item) => {
+            let itemName = item.querySelector('.item-name') ? item.querySelector('.item-name').innerText : 'Unknown';
+            let itemQty = item.querySelector('.qty-input') ? parseInt(item.querySelector('.qty-input').value) : 0;
+            let itemPrice = item.querySelector('.original-item-price') ? parseFloat(item.querySelector('.original-item-price').innerText.replace('Rs. ', '').trim()) : 0;
+
+            if (itemName === 'Unknown' || itemQty === 0) return;
+
+            itemCount++;
+            let itemTotal = itemQty * itemPrice;
+
+            printWindow.document.write('<li class="list-group-item d-flex justify-content-between align-items-center">' +
+                itemCount + ': ' + itemName +
+                '<span>(Qty: ' + itemQty +
+                ', Unit Price: Rs. ' + itemPrice.toFixed(2) +
+                ', Total: Rs. ' + itemTotal.toFixed(2) + ')</span></li>');
+            
+            subtotal += itemTotal;
+            totalQuantity += itemQty;
+        });
+        printWindow.document.write('</ul>');
+
+        printWindow.document.write('<div class="d-flex justify-content-between align-items-center mt-3">');
+        printWindow.document.write('<strong>Total Quantity: ' + totalQuantity + '</strong>');
+        printWindow.document.write('</div>');
+        printWindow.document.write('<div class="d-flex justify-content-between align-items-center mt-3">');
+        printWindow.document.write('<strong>Total Price (with tax): Rs. ' + totalPriceText.replace('Rs. ', '').trim() + '</strong>');
+        printWindow.document.write('</div>');
+
+        printWindow.document.write('</div></body></html>');
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+    }
+
+    // Event listener for print cart items button
+    document.getElementById('printCartItems').addEventListener('click', printCartItems);
+
+    // Event listener for print receipt button
+    document.getElementById('printReceipt').addEventListener('click', printReceipt);
+
+    // Update Popover
+    $('#popcart').popover();
+    updatePopover(cart);
+</script>
+
+
+
+
+
+
+
+
+{% comment %} old script  {% endcomment %}
 <script>
     
      // Initialize cart from localStorage
@@ -300,8 +419,7 @@
         initializeCart(cart); // Re-initialize the cart UI on button click
     });
 
-</script>
-<script>
+    </script>
 
 
 
@@ -312,157 +430,154 @@
 
 
 
+    <script>
 
 
+        // Initialize cart from localStorage or create a new cart
+        var cart = JSON.parse(localStorage.getItem('cart')) || {};
 
+        // Update the cart display
+        function updateCart() {
+            var totalItems = 0;
+            var totalPrice = 0;
+            var cartItems = '';
+            var i = 0;
 
+            for (var item in cart) {
+                var name = cart[item][1];
+                var qty = cart[item][0];
+                var itemPrice = cart[item][2];
+                var itemTotal = qty * itemPrice;
 
+                totalItems += qty;
+                totalPrice += itemTotal;
+                cartItems += `<li class="order-item list-group-item d-flex justify-content-between align-items-center">
+                    <div class="item-info">
+                        <i class="fas hover-icon remove-item" id="delete${item}" style="cursor: pointer;">&#xf057;</i>
+                        <img src="https://content.jdmagicbox.com/v2/comp/pandharpur/e5/9999p2186.2186.240102180603.t9e5/catalogue/hotel-royal-shetkari-bhandishegaon-pandharpur-restaurants-m844m8eap3.jpg" alt="" width="30" height="30"/>
+                        <div class="item-name"><a href='/shop/search/?search=${name}' class='alert-link'><span>${++i}: ${name}</span></a></div>
+                    </div>
+                    <div class="item-quantity">
+                        <button id="decrease${item}" class="btn btn-primary btn-sm decrease">-</button>
+                        <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
+                        <button id="increase${item}" class="btn btn-primary btn-sm increase">+</button>
+                    </div>
+                    <div class="original-item-price">
+                        Rs. ${itemPrice}
+                        <div class="item-price">Rs. ${itemTotal}</div>
+                    </div>
+                </li>`;
+            }
 
-// Initialize cart from localStorage or create a new cart
-var cart = JSON.parse(localStorage.getItem('cart')) || {};
+            cartItems += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
+                <span>TOTAL PRICE:</span>
+                <span class="badge badge-danger badge-pill" id="totalPrice">Rs. ${totalPrice} /-</span>
+            </li>`;
 
-// Update the cart display
-function updateCart() {
-    var totalItems = 0;
-    var totalPrice = 0;
-    var cartItems = '';
-    var i = 0;
-
-    for (var item in cart) {
-        var name = cart[item][1];
-        var qty = cart[item][0];
-        var itemPrice = cart[item][2];
-        var itemTotal = qty * itemPrice;
-
-        totalItems += qty;
-        totalPrice += itemTotal;
-        cartItems += `<li class="order-item list-group-item d-flex justify-content-between align-items-center">
-            <div class="item-info">
-                <i class="fas hover-icon remove-item" id="delete${item}" style="cursor: pointer;">&#xf057;</i>
-                <img src="https://content.jdmagicbox.com/v2/comp/pandharpur/e5/9999p2186.2186.240102180603.t9e5/catalogue/hotel-royal-shetkari-bhandishegaon-pandharpur-restaurants-m844m8eap3.jpg" alt="" width="30" height="30"/>
-                <div class="item-name"><a href='/shop/search/?search=${name}' class='alert-link'><span>${++i}: ${name}</span></a></div>
-            </div>
-            <div class="item-quantity">
-                <button id="decrease${item}" class="btn btn-primary btn-sm decrease">-</button>
-                <input type="number" id="val-${item}" class="form-control qty-input" value="${qty}" min="0"/>
-                <button id="increase${item}" class="btn btn-primary btn-sm increase">+</button>
-            </div>
-            <div class="original-item-price">
-                Rs. ${itemPrice}
-                <div class="item-price">Rs. ${itemTotal}</div>
-            </div>
-        </li>`;
-    }
-
-    cartItems += `<li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque;">
-        <span>TOTAL PRICE:</span>
-        <span class="badge badge-danger badge-pill" id="totalPrice">Rs. ${totalPrice} /-</span>
-    </li>`;
-
-    $('#items').html(cartItems);
-    localStorage.setItem('cart', JSON.stringify(cart));
-    $('#itemsJson').val(JSON.stringify(cart));
-    $('#amount').val(totalPrice);
-}
-
-// Event listeners for cart buttons
-document.addEventListener('click', function(event) {
-    if (event.target.classList.contains('cart')) {
-        var idstr = event.target.id.toString().slice(2);
-        if (cart[idstr]) {
-            cart[idstr][0] += 1;
-            showNotification(cart[idstr][1] + " quantity increased to " + cart[idstr][0]);
-        } else {
-            var name = document.getElementById('namepr' + idstr).innerHTML;
-            var price = parseInt(document.getElementById('pricepr' + idstr).innerText.replace('Rs. ', '').replace(' /-', ''));
-            cart[idstr] = [1, name, price];
-            showNotification(cart[idstr][1] + " added to cart");
+            $('#items').html(cartItems);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            $('#itemsJson').val(JSON.stringify(cart));
+            $('#amount').val(totalPrice);
         }
-        updateCart();
-    }
-});
 
-// Add and remove item functionality
-$('#items').on('click', 'button.decrease', function() {
-    var id = this.id.slice(8); // Change index based on the new button ID prefix
-    if (cart[id]) {
-        cart[id][0] = Math.max(0, cart[id][0] - 1);
-        if (cart[id][0] === 0) {
+        // Event listeners for cart buttons
+        document.addEventListener('click', function(event) {
+            if (event.target.classList.contains('cart')) {
+                var idstr = event.target.id.toString().slice(2);
+                if (cart[idstr]) {
+                    cart[idstr][0] += 1;
+                    showNotification(cart[idstr][1] + " quantity increased to " + cart[idstr][0]);
+                } else {
+                    var name = document.getElementById('namepr' + idstr).innerHTML;
+                    var price = parseInt(document.getElementById('pricepr' + idstr).innerText.replace('Rs. ', '').replace(' /-', ''));
+                    cart[idstr] = [1, name, price];
+                    showNotification(cart[idstr][1] + " added to cart");
+                }
+                updateCart();
+            }
+        });
+
+        // Add and remove item functionality
+        $('#items').on('click', 'button.decrease', function() {
+            var id = this.id.slice(8); // Change index based on the new button ID prefix
+            if (cart[id]) {
+                cart[id][0] = Math.max(0, cart[id][0] - 1);
+                if (cart[id][0] === 0) {
+                    delete cart[id];
+                }
+                updateCart();
+            }
+        });
+
+        $('#items').on('click', 'button.increase', function() {
+            var id = this.id.slice(8); // Change index based on the new button ID prefix
+            if (cart[id]) {
+                cart[id][0] += 1;
+                updateCart();
+            }
+        });
+
+        // Update quantity directly from input
+        $('#items').on('change', 'input.qty-input', function() {
+            var id = this.id.slice(3);
+            var newQty = parseInt(this.value);
+            if (newQty > 0) {
+                cart[id][0] = newQty;
+            } else {
+                delete cart[id];
+            }
+            updateCart();
+        });
+
+        // Delete item
+        $('#items').on('click', 'i.remove-item', function() { // Update the selector to match the correct icon
+            var id = this.id.slice(6);
             delete cart[id];
+            updateCart();
+        });
+
+        // Prevent form submission if cart is empty
+        $('#checkoutForm').on('submit', function(event) {
+            if (Object.keys(cart).length === 0) {
+                event.preventDefault(); // Prevent form submission
+                alert('Your cart is empty. Please add items to your cart before checking out.'); // Alert the user
+            }
+        });
+
+        // Handle form submission success
+        {% if messages %}
+            {% for message in messages %}
+                alert('{{ message }}');
+            {% endfor %}
+            localStorage.removeItem('cart');
+            updateCart();
+        {% endif %}
+
+        // Function to show notifications
+        function showNotification(message) {
+            var notification = document.getElementById('notification');
+            notification.innerText = message;
+            notification.style.display = 'block';
+            setTimeout(function() {
+                notification.style.display = 'none';
+            }, 2000);
         }
+
+        // Clear cart functionality
+        $('#clearCart').on('click', function() {
+            cart = {}; // Clear the cart object
+            localStorage.removeItem('cart'); // Remove cart from localStorage
+            $('#items').html(''); // Clear the cart items in the UI
+            $('#totalPrice').html('Rs. 0'); // Reset total price
+            alert('Your cart has been cleared.'); // Notify the user
+        });
+
+        $('#refreshPage').on('click', function() {
+            location.reload(); // Refresh the page
+        });
+
+        // Initial cart update
         updateCart();
-    }
-});
-
-$('#items').on('click', 'button.increase', function() {
-    var id = this.id.slice(8); // Change index based on the new button ID prefix
-    if (cart[id]) {
-        cart[id][0] += 1;
-        updateCart();
-    }
-});
-
-// Update quantity directly from input
-$('#items').on('change', 'input.qty-input', function() {
-    var id = this.id.slice(3);
-    var newQty = parseInt(this.value);
-    if (newQty > 0) {
-        cart[id][0] = newQty;
-    } else {
-        delete cart[id];
-    }
-    updateCart();
-});
-
-// Delete item
-$('#items').on('click', 'i.remove-item', function() { // Update the selector to match the correct icon
-    var id = this.id.slice(6);
-    delete cart[id];
-    updateCart();
-});
-
-// Prevent form submission if cart is empty
-$('#checkoutForm').on('submit', function(event) {
-    if (Object.keys(cart).length === 0) {
-        event.preventDefault(); // Prevent form submission
-        alert('Your cart is empty. Please add items to your cart before checking out.'); // Alert the user
-    }
-});
-
-// Handle form submission success
-{% if messages %}
-    {% for message in messages %}
-        alert('{{ message }}');
-    {% endfor %}
-    localStorage.removeItem('cart');
-    updateCart();
-{% endif %}
-
-// Function to show notifications
-function showNotification(message) {
-    var notification = document.getElementById('notification');
-    notification.innerText = message;
-    notification.style.display = 'block';
-    setTimeout(function() {
-        notification.style.display = 'none';
-    }, 2000);
-}
-
-// Clear cart functionality
-$('#clearCart').on('click', function() {
-    cart = {}; // Clear the cart object
-    localStorage.removeItem('cart'); // Remove cart from localStorage
-    $('#items').html(''); // Clear the cart items in the UI
-    $('#totalPrice').html('Rs. 0'); // Reset total price
-    alert('Your cart has been cleared.'); // Notify the user
-});
-
-$('#refreshPage').on('click', function() {
-    location.reload(); // Refresh the page
-});
-
-// Initial cart update
-updateCart();
 
 </script>
     

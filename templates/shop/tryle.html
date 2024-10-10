@@ -86,3 +86,48 @@
 
 </script>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+<script>
+    
+	document.getElementById('printCartItems').addEventListener('click', function() {
+		let cartItems = document.getElementById('items').innerHTML; // Get the cart items
+		let totalPrice = document.getElementById('totalPrice').innerText; // Get the total price
+	
+		let printWindow = window.open('', 'Print Order', 'width=600,height=400');
+		printWindow.document.write('<html><head><title>Print Cart</title>');
+		printWindow.document.write('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">');
+		printWindow.document.write('<style>@media print { @page { size: auto; margin: 10mm; } .no-print { display: none; } }</style>');
+		printWindow.document.write('</head><body>');
+		
+		// Create the content to be printed
+		printWindow.document.write('<div class="container">');
+		printWindow.document.write('<h3>Your Cart Items</h3>');
+		printWindow.document.write('<ul class="list-group">' + cartItems + '</ul>');
+		printWindow.document.write('<div class="d-flex justify-content-between align-items-center mt-3">');
+		printWindow.document.write('<strong>Total Price: </strong><span>' + totalPrice + '</span>');
+		printWindow.document.write('</div>');
+		
+		printWindow.document.write('</div></body></html>');
+		printWindow.document.close();
+		printWindow.focus();
+		printWindow.print(); // Trigger the print functionality
+		printWindow.close(); // Close the print window after printing
+	});
+	   
+	
+		// Update Popover
+		$('#popcart').popover();
+		updatePopover(cart);
+	
+		
+	</script>
