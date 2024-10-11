@@ -32,11 +32,21 @@ class Contact(models.Model):
 
 
 
+from django.db import models
+from django.utils import timezone
+
 class Orders(models.Model):
+    PAYMENT_METHOD_CHOICES = [
+        ('cash', 'Cash'),
+        ('card', 'Card'),
+        ('online', 'Online'),
+        ('other', 'Other'),
+    ]
+
     order_id = models.AutoField(primary_key=True)
     items_json = models.CharField(max_length=5000)
     userId = models.IntegerField(default=0)
-    amount = models.IntegerField(default=0)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)  # Updated to DecimalField for better precision
     name = models.CharField(max_length=90, null=True, blank=True)  # Updated
     email = models.CharField(max_length=111, null=True, blank=True)  # Updated
     address = models.CharField(max_length=111, null=True, blank=True)  # Updated
@@ -44,10 +54,18 @@ class Orders(models.Model):
     state = models.CharField(max_length=111, null=True, blank=True)  # Updated
     zip_code = models.CharField(max_length=111, null=True, blank=True)  # Updated
     phone = models.CharField(max_length=111, default="", null=True, blank=True)  # Updated
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHOD_CHOICES, default='cash')  # New field for payment method
+    payment_comments = models.CharField(max_length=255, null=True, blank=True)  # New field for comments if payment method is 'Other'
     timestamp = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f"Order {self.order_id}"
+
+    def save(self, *args, **kwargs):
+        # Ensure payment_comments is filled if payment method is 'Other'
+        if self.payment_method == 'other' and not self.payment_comments:
+            raise ValueError("Payment comments are required for 'Other' payment method.")
+        super().save(*args, **kwargs)
 
 
 

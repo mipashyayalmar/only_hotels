@@ -65,6 +65,11 @@
             <input type="text" id="search-input" placeholder="Search..." />
             <button id="search-btn">Search</button>
         </div>
+
+        <div id="no-results-message"class="menu-items" style="display: none; color: red;">
+            <center>No products matching this NAME.</center>
+        </div>
+        
         {% for category, subcats in allProds %}
         {% for subcategory, products in subcats %}
         <div class="category" data-subcategory="{{ subcategory }}" style="display: none;">
@@ -118,23 +123,41 @@
                 <span class="badge badge-danger badge-pill" id="totalPrice">Rs. 0 /-</span>
             </li>
         </div>
-        <div class="order-footer-payment">
-            <div class="payment-options">
-                <label>
-                    <input type="radio" name="payment" value="cash" checked> Cash
-                </label>
-                <label>
-                    <input type="radio" name="payment" value="other"> Online
-                </label>
-                <label>
-                    <input type="radio" name="payment" value="card"> Card
-                </label>
-                <label>
-                    <input type="radio" name="payment" value="other"> Other
-                </label>
-            </div>
+
+    <!-- Form for Checkout -->
+<form method="POST" action="{% url 'shop:checkout' %}" id="checkoutForm" onsubmit="return validatePaymentMethod();">
+    {% csrf_token %}
+    <!-- Other input fields -->
+    
+    <input type="hidden" name="amount" value="{{ amount }}">  <!-- Ensure amount is set correctly -->
+    
+    <div class="order-footer-payment">
+        <div class="payment-options">
+            <label>
+                <input type="radio" name="payment_method" value="cash"> Cash
+            </label>
+            <label>
+                <input type="radio" name="payment_method" value="online"> Online
+            </label>
+            <label>
+                <input type="radio" name="payment_method" value="card"> Card
+            </label>
+            <label>
+                <input type="radio" name="payment_method" value="other"> Other
+            </label>
         </div>
-        
+    
+        <!-- Additional input for "Other" payment method -->
+        <div id="payment_comments_container" style="display:none;">
+            <label for="payment_comments">Comments :</label>
+            <input type="text" name="payment_comments" id="payment_comments" class="form-control" placeholder="Enter comment">
+        </div>
+    </div>
+
+    <div id="payment-alert" style="display: none; background-color: #d4edda; color: #155724; padding: 10px; border: 1px solid #c3e6cb;">
+        Please choose a payment method!
+    </div>
+
         <!-- Print Button -->
         
     
@@ -150,7 +173,8 @@
                     <button type="submit" name="action" value="save">Save</button>
                     <button class="btn btn-info" id="printCartItems"> Save & Print</button>
                 </div>
-            </form>
+            </form> 
+        </form>
         
             <div class="print">
                 <button id="printReceipt">Counter Print</button>
@@ -159,7 +183,18 @@
                 <button type="submit" name="action" value="kot_print">KOT & Print</button>
             </div>
         </div>
-        
+  
+
+<!-- Modal for Payment Comments -->
+<div id="commentModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background-color:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="background-color:white; margin:20% auto; padding:20px; width:300px; text-align:center; border-radius:5px;">
+        <h3>Enter Your Comments</h3>
+        <textarea id="modal_payment_comments" class="form-control" placeholder="Enter comments here..."></textarea>
+        <br>
+        <button id="submitComments" style="margin-top:10px;">Submit</button>
+        <button onclick="closeModal()" style="margin-top:10px;">Cancel</button>
+    </div>
+</div>
         {% else %}
         <div id="cont2">
             <div class="alert alert-info">
@@ -172,6 +207,99 @@
 {% endblock %}
 
 {% block js %}
+{% comment %} select payment method  {% endcomment %}
+
+
+        <script>
+            
+            //pyment method selected
+                function validatePaymentMethod() {
+                    const paymentMethods = document.getElementsByName('payment_method');
+                    let isSelected = false;
+
+                    for (const method of paymentMethods) {
+                        if (method.checked) {
+                            isSelected = true;
+                            break;
+                        }
+                    }
+
+                    const alertDiv = document.getElementById('payment-alert');
+                    if (!isSelected) {
+                        alertDiv.style.display = 'block'; // Show alert if no payment method is selected
+                        return false; // Prevent form submission
+                    } else {
+                        alertDiv.style.display = 'none'; // Hide alert if a payment method is selected
+                        return true; // Allow form submission
+                    }
+                }
+        </script>
+
+       
+
+
+<script>
+    // JavaScript to toggle comments field for "Other" payment method
+    const paymentRadios = document.querySelectorAll('input[name="payment_method"]');
+    const paymentCommentsContainer = document.getElementById('payment_comments_container');
+    const paymentCommentsInput = document.getElementById('payment_comments');
+    const modal = document.getElementById('commentModal');
+    const modalCommentsInput = document.getElementById('modal_payment_comments');
+
+    paymentRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'other') {
+                modal.style.display = 'block'; // Show the modal for comments
+            } else {
+                paymentCommentsContainer.style.display = 'none';
+                paymentCommentsInput.value = ''; // Clear the input if not "Other"
+            }
+        });
+    });
+
+    // Close modal function
+    function closeModal() {
+        modal.style.display = 'none';
+        modalCommentsInput.value = ''; // Clear the modal input when closed
+    }
+
+    // Submit comments from modal
+    document.getElementById('submitComments').addEventListener('click', function() {
+        const comments = modalCommentsInput.value.trim();
+        if (comments) {
+            paymentCommentsInput.value = comments; // Set the comments input
+            closeModal(); // Close the modal
+            paymentCommentsContainer.style.display = 'block'; // Show comments container
+        } else {
+            alert('Please enter a comment before submitting.');
+        }
+    });
+
+    // Validation function
+    function validatePaymentMethod() {
+        const paymentMethods = document.getElementsByName('payment_method');
+        let isSelected = false;
+
+        for (const method of paymentMethods) {
+            if (method.checked) {
+                isSelected = true;
+                break;
+            }
+        }
+
+        const alertDiv = document.getElementById('payment-alert');
+        if (!isSelected) {
+            alertDiv.style.display = 'block'; // Show alert if no payment method is selected
+            return false; // Prevent form submission
+        } else {
+            alertDiv.style.display = 'none'; // Hide alert if a payment method is selected
+            return true; // Allow form submission
+        }
+    }
+</script>
+
+
+
 
 <script>
     // Function to print the cart items

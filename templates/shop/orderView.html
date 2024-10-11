@@ -4,6 +4,28 @@
 {% load static %}
 {% block css %}
 <link href="{% static 'template/all_template.css' %}" rel="stylesheet">
+<style>
+    .payment-summary {
+        margin-top: 20px;
+    }
+    .badge-cash {
+        background-color: #28a745; /* Green for Cash */
+    }
+    .badge-online {
+        background-color: #007bff; /* Blue for Online */
+    }
+    .badge-card {
+        background-color: #ffc107; /* Yellow for Card */
+    }
+    .badge-other {
+        background-color: #dc3545; /* Red for Other */
+    }
+    .payment-summary li {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px;
+    }
+</style>
 {% endblock %}
 
 {% block body %}
@@ -20,14 +42,37 @@
                         {% csrf_token %}
                         <input type="date" id="startDate" name="start_date" class="form-control" style="width: auto; display: inline-block;">
                         <input type="date" id="endDate" name="end_date" class="form-control" style="width: auto; display: inline-block;">
+                        
+                        <!-- Payment Method Filter -->
+                        <select name="payment_method" class="form-control" style="width: auto; display: inline-block;">
+                            <option value="">All Payment Methods</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="Online">Online</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
                         <button type="submit" id="filterDate" class="btn btn-primary">Filter and Calculate Total</button>
                         <a href="" class="btn btn-primary"><span>Refresh List</span></a>
                         <a href="#" onclick="window.print()" class="btn btn-info no-print"><i class="material-icons">&#xE24D;</i> <span>Print</span></a>
                     </form>
+                
                 </div>
+
             </div>
+        
+        <!-- Payment Method Summary -->
+        <div class="payment-method-summary">
+            <h4>Payment Method Breakdown (Selected Date)</h4>
+            <ul class="list-group payment-summary">
+                <li class="list-group-item">Cash Payments: <span class="badge badge-cash">Rs. {{ cash_total }}</span></li>
+                <li class="list-group-item">Card Payments: <span class="badge badge-card">Rs. {{ card_total }}</span></li>
+                <li class="list-group-item">Online Payments: <span class="badge badge-online">Rs. {{ online_total }}</span></li>
+                <li class="list-group-item">Other Payments: <span class="badge badge-other">Rs. {{ other_total }}</span></li>
+            </ul>
         </div>
 
+        <!-- Orders Table -->
         <table class="table table-striped table-hover">
             <thead>
                 <tr>
@@ -37,23 +82,28 @@
                     <th>Order Date</th>
                     <th>Amount</th>
                     <th>Items</th>
+                    <th>Payment Method</th>
+                    <th>Payment Remark</th>
                     <th>Update</th>
                 </tr>
             </thead>
             <tbody>
                 {% for i in orderHistory %}
                 <tr>
-                    <td class="count"></td>
+                    <td>{{ forloop.counter }}</td>
                     <td>{{ i.order_id }}</td>
                     <td>{{ i.phone }}</td>
                     <td>{{ i.timestamp }}</td>
-                    <td>{{ i.amount }}</td>
+                    <td>Rs. {{ i.amount }}</td>
                     <td><a href="#" id="click{{ i.order_id }}" class="view" title="View Details"><i class="material-icons">&#xE5C8;</i></a></td>
+                    <td>{{ i.payment_method }}</td>
+                    <td>{{ i.payment_comments|default:"N/A" }}</td>
                     <td><a href="{% url 'shop:update_order' i.order_id %}" class="btn btn-warning">Update</a></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
         <div id="citems"></div>
         <div>
             <li class="list-group-item d-flex justify-content-between align-items-center" style="background: bisque; font-weight: bold; font-size: 19px;">
@@ -63,6 +113,7 @@
         </div>
     </div>
 </div>
+
 {% else %}
     <div id="cont2">
         <div class="alert alert-info">
@@ -112,7 +163,6 @@ $(document).ready(function() {
                         </li>`;
         $('#citems').append(totalStr);
 
-        // Open new popup window
         let popupContent = $('#citems').html();
         let popupWindow = window.open('', 'Order Details', 'width=600,height=400');
         popupWindow.document.write('<html><head><title>Order Details</title>');
@@ -138,28 +188,6 @@ $(document).ready(function() {
         popupWindow.document.close();
     });
     {% endfor %}
-
-    // Update Popover
-    $('#popcart').popover();
-    updatePopover(cart);
-
-    function updatePopover(cart) {
-        var popStr = "";
-        popStr = popStr + "<h5> Click <a href='/shop/checkout'><button class='btn btn-primary'>Here</button></a> to order </h5><div class='mx-2 my-2'>";
-
-        $.each(cart, function (index, value) {
-            popStr = popStr + "<li class='list-group-item d-flex justify-content-between align-items-center'>";
-            popStr = popStr + value[1] + " <span class='badge badge-primary badge-pill'>" + value[0] + " x Rs. " + value[2] + " = <span class='badge badge-danger badge-pill'>Rs. " + (value[0] * value[2]) + "</span></span></li>";
-        });
-
-        let totalAmount = 0;
-        $.each(cart, function (index, value) {
-            totalAmount += (value[0] * value[2]);
-        });
-
-        popStr = popStr + "<li class='list-group-item d-flex justify-content-between align-items-center' style='background: bisque; font-weight: bold; font-size: 19px;'>TOTAL PRICE: <span class='badge badge-danger badge-pill' style='font-size: 19px;'>Rs. " + totalAmount + " /-</span></li></div>";
-        $('#popcart').attr('data-content', popStr);
-    }
 });
 </script>
 {% endblock %}

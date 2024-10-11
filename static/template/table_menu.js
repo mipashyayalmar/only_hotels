@@ -53,10 +53,10 @@ document.querySelectorAll('.subcategory-link').forEach(link => {
 
 
 
-//  searching product 
 document.addEventListener('DOMContentLoaded', function() {
     const searchBtn = document.getElementById('search-btn');
     const searchInput = document.getElementById('search-input');
+    const noResultsMessage = document.getElementById('no-results-message'); // Element for displaying no results message
 
     // Search function to filter products and subproducts
     function searchProducts() {
@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log("Search term: ", searchTerm);  // Debugging line to check the search term
 
         const categories = document.querySelectorAll('.category');
+        let anyProductMatched = false; // Flag to track if any product is matched
 
         categories.forEach(category => {
             const subcategory = category.getAttribute('data-subcategory').toLowerCase();
@@ -75,6 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (productName.includes(searchTerm)) {
                     product.style.display = 'block';
                     subcategoryMatch = true;
+                    anyProductMatched = true; // At least one product matched
                 } else {
                     product.style.display = 'none';
                 }
@@ -87,6 +89,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 category.style.display = 'none';
             }
         });
+
+        // Show or hide no results message
+        if (anyProductMatched) {
+            noResultsMessage.style.display = 'none'; // Hide message if products matched
+        } else {
+            noResultsMessage.style.display = 'block'; // Show message if no products matched
+        }
     }
 
     // Attach event to search button

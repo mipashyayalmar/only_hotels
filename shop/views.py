@@ -12,9 +12,9 @@ from PayTm import Checksum
 MERCHANT_KEY = 'kbzk1DSbJiV_O3p5';   
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
-from django.shortcuts import render, redirect
 from .models import Advertise
 from .forms import AdvertiseForm
+
 
 
 def index(request):
@@ -89,35 +89,6 @@ def tracker(request):
 
 
 
-
-def orderView(request):
-    if request.user.is_authenticated:
-        current_user = request.user
-        orderHistory = Orders.objects.filter(userId=current_user.id)
-        total_amount = 0
-        
-        if request.method == 'POST':
-            start_date = request.POST.get('start_date')
-            end_date = request.POST.get('end_date')
-
-            if start_date and end_date:
-                start_date = parse_date(start_date)
-                end_date = parse_date(end_date)
-                orderHistory = orderHistory.filter(timestamp__date__range=(start_date, end_date))
-                # Calculate the total amount for filtered orders
-                total_amount = orderHistory.aggregate(total=Sum('amount'))['total'] or 0
-
-        if len(orderHistory) == 0:
-            messages.info(request, "You don't have any orders")
-            return render(request, 'shop/orderView.html')
-
-        return render(request, 'shop/orderView.html', {
-            'orderHistory': orderHistory,
-            'total_amount': total_amount,
-        })
-    
-    return render(request, 'shop/orderView.html')
-
     
 def searchMatch(query, item):
     if query in item.desc.lower() or query in item.product_name.lower() or query in item.category.lower() or query in item.desc or query in item.product_name or query in item.category or query in item.desc.upper() or query in item.product_name.upper() or query in item.category.upper():
@@ -157,34 +128,96 @@ def search(request):
 
 
 
+def orderView(request):
+    if request.user.is_authenticated:
+        current_user = request.user
+        orderHistory = Orders.objects.filter(userId=current_user.id)
+
+        # Initialize totals
+        total_amount = 0
+        cash_total = 0
+        card_total = 0
+        online_total = 0
+        other_total = 0
+
+        # Get selected payment method from POST data
+        selected_payment_method = request.POST.get('payment_method', '')
+
+        # If the user submits a date filter via POST
+        if request.method == 'POST':
+            start_date = request.POST.get('start_date')
+            end_date = request.POST.get('end_date')
+
+            if start_date and end_date:
+                start_date = parse_date(start_date)
+                end_date = parse_date(end_date)
+                
+                # Filter the order history by the provided date range
+                orderHistory = orderHistory.filter(timestamp__date__range=(start_date, end_date))
+
+            # Filter by payment method if one is selected
+            if selected_payment_method:
+                orderHistory = orderHistory.filter(payment_method__iexact=selected_payment_method)
+
+        # Calculate totals for each payment method, ensuring case-insensitivity
+        cash_total = orderHistory.filter(payment_method__iexact='cash').aggregate(total=Sum('amount'))['total'] or 0
+        card_total = orderHistory.filter(payment_method__iexact='card').aggregate(total=Sum('amount'))['total'] or 0
+        online_total = orderHistory.filter(payment_method__iexact='online').aggregate(total=Sum('amount'))['total'] or 0
+        other_total = orderHistory.filter(payment_method__iexact='other').aggregate(total=Sum('amount'))['total'] or 0
+
+        # Calculate the total amount for all filtered orders
+        total_amount = orderHistory.aggregate(total=Sum('amount'))['total'] or 0
+
+        # If no orders are found, inform the user
+        if not orderHistory.exists():
+            messages.info(request, "You don't have any orders within the selected filters.")
+            return render(request, 'shop/orderView.html')
+
+        # Render the template with order history and totals for each payment method
+        return render(request, 'shop/orderView.html', {
+            'orderHistory': orderHistory,
+            'total_amount': total_amount,
+            'cash_total': cash_total,
+            'card_total': card_total,
+            'online_total': online_total,
+            'other_total': other_total,
+        })
+    
+    # If the user is not authenticated, render the page without order details
+    return render(request, 'shop/orderView.html')
 
 def checkout(request):
     if request.method == "POST":
+        # Debugging: Print all POST data
+        print(f"POST Data: {request.POST}")
+
         if 'order_lookup' in request.POST:
             # Handle order lookup by order_id
             order_id = request.POST.get('order_id', '')
-
             try:
                 order = Orders.objects.get(order_id=order_id)
                 order_updates = OrderUpdate.objects.filter(order_id=order_id)
                 items_json = json.loads(order.items_json)  # Assuming items_json is a JSON string
-                return render(request, 'shop/checkout.html', {
+                return render(request, 'shop/index1.html', {
                     'order': order,
                     'order_updates': order_updates,
                     'order_found': True,
                     'items': items_json
                 })
             except Orders.DoesNotExist:
-                return render(request, 'shop/checkout.html', {'order_not_found': True})
+                return render(request, 'shop/index1.html', {'order_not_found': True})
 
         else:
             # Handle the standard checkout process
             user_id = request.POST.get('user_id', '')
-            name = request.POST.get('name', '')  # Capture the name field
-            email = request.POST.get('email', '')  # Capture the email field
-            city = request.POST.get('city', '')  # Capture the city field
-            state = request.POST.get('state', '')  # Capture the state field
-            zip_code = request.POST.get('zip_code', '')  # Capture the zip code field
+            name = request.POST.get('name', '')
+            email = request.POST.get('email', '')
+            city = request.POST.get('city', '')
+            state = request.POST.get('state', '')
+            zip_code = request.POST.get('zip_code', '')
+
+            # Debugging: Print received user_id
+            print(f"Received User ID: {user_id}")
 
             if not user_id:
                 messages.error(request, 'User ID is required.')
@@ -201,13 +234,21 @@ def checkout(request):
             items_json = request.POST.get('itemsJson', '')
             amount = request.POST.get('amount', '')
             order_action = request.POST.get('order_action', 'new')
+            payment_method = request.POST.get('payment_method', '')  # Capture payment method
+            payment_comments = request.POST.get('payment_comments', '')  # Capture payment comments
 
             # Validate and convert amount
             try:
                 amount = float(amount) if amount else 0.0
+                print(f"Processed Amount: {amount}")  # Debugging: Print processed amount
             except ValueError:
                 messages.error(request, 'Invalid amount.')
                 return redirect('shop:index')
+
+            # Validate payment method and comments
+            if payment_method == 'other' and not payment_comments:
+                messages.error(request, 'Payment comments are required for the "Other" payment method.')
+                return redirect('shop:checkout')
 
             # Store customer data in session
             request.session['customer_data'] = {
@@ -218,7 +259,9 @@ def checkout(request):
                 'state': state,
                 'zip_code': zip_code,
                 'address': address,
-                'phone': phone
+                'phone': phone,
+                'payment_method': payment_method,
+                'payment_comments': payment_comments
             }
 
             if order_action == 'update':
@@ -235,6 +278,8 @@ def checkout(request):
                     order.city = city
                     order.state = state
                     order.zip_code = zip_code
+                    order.payment_method = payment_method  # Update payment method
+                    order.payment_comments = payment_comments  # Update payment comments if 'Other'
                     order.save()
 
                     update = OrderUpdate(order_id=order.order_id, update_desc="The Order has been Updated")
@@ -259,7 +304,9 @@ def checkout(request):
                     email=email,
                     city=city,
                     state=state,
-                    zip_code=zip_code
+                    zip_code=zip_code,
+                    payment_method=payment_method,  # Set payment method
+                    payment_comments=payment_comments  # Set payment comments if 'Other'
                 )
                 order.save()
 
@@ -269,10 +316,11 @@ def checkout(request):
                 messages.success(request, f"Order {order.order_id} successfully created.")
                 return redirect('shop:orderView')  # Redirect to order view
 
+            # Handle payment options
             if 'onlinePay' in request.POST:
                 # Handle online payment
                 darshan_dict = {
-                    'MID': 'WorldP64425807474247',  # Your-Merchant-Id-Here
+                    'MID': 'WorldP64425807474247',  # Your Merchant ID
                     'ORDER_ID': str(order.order_id),
                     'TXN_AMOUNT': str(amount),
                     'CUST_ID': '',  # Removed email
@@ -287,7 +335,7 @@ def checkout(request):
             elif 'cashOnDelivery' in request.POST:
                 return redirect('shop:orderView')
 
-    return render(request, 'shop/checkout.html')
+    return render(request, 'shop/index1.html')
 
 def productView(request, myid):
     product = get_object_or_404(Product, id=myid)

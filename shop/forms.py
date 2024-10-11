@@ -4,10 +4,23 @@ from .models import Orders
 class OrderUpdateForm(forms.ModelForm):
     class Meta:
         model = Orders
-        fields = ['items_json', 'amount', 'name', 'email', 'address', 'city', 'state', 'zip_code', 'phone']
+        fields = [
+            'items_json', 
+            'amount', 
+            'name', 
+            'email', 
+            'address', 
+            'city', 
+            'state', 
+            'zip_code', 
+            'phone', 
+            'payment_method',  # Add payment_method field
+            'payment_comments'  # Add payment_comments field
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Apply widget customization for all fields
         self.fields['items_json'].widget.attrs.update({'class': 'form-control', 'id': 'items_json'})
         self.fields['amount'].widget.attrs.update({'class': 'form-control'})
         self.fields['name'].widget.attrs.update({'class': 'form-control'})
@@ -17,7 +30,27 @@ class OrderUpdateForm(forms.ModelForm):
         self.fields['state'].widget.attrs.update({'class': 'form-control'})
         self.fields['zip_code'].widget.attrs.update({'class': 'form-control'})
         self.fields['phone'].widget.attrs.update({'class': 'form-control'})
-        # Add any additional field customizations here
+        
+        # Add form customization for payment_method
+        self.fields['payment_method'].widget.attrs.update({'class': 'form-control'})
+        
+        # Hide the payment_comments field by default
+        if self.instance and self.instance.payment_method != 'other':
+            self.fields['payment_comments'].widget.attrs.update({'class': 'form-control', 'style': 'display:none;'})
+        else:
+            self.fields['payment_comments'].widget.attrs.update({'class': 'form-control'})
+
+    def clean(self):
+        cleaned_data = super().clean()
+        payment_method = cleaned_data.get('payment_method')
+        payment_comments = cleaned_data.get('payment_comments')
+
+        # Validate that payment_comments is provided if payment_method is 'other'
+        if payment_method == 'other' and not payment_comments:
+            self.add_error('payment_comments', "This field is required when 'Other' payment method is selected.")
+
+        return cleaned_data
+
 
 from django import forms
 from .models import Advertise
