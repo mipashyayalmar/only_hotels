@@ -81,7 +81,15 @@
                         <h5 id="namepr{{ product.id }}" class="product-name card-title" style="display:none;">{{ product.product_name }}</h5>
                         <h6 id="pricepr{{ product.id }}" class="product-price" style="color: #ff0000">Rs. {{ product.price }} /-</h6>
                         <div id="divpr{{ product.id }}" class="divpr">
-                            <button id="pr{{ product.id }}" class="menu-item cart">{{ product.product_name }}</button>
+                            <button id="pr{{ product.id }}" class="menu-item cart">{{ product.product_name }}<span style="
+                                position: absolute; 
+                                left: 0; 
+                                top: 0; 
+                                width: 5px; 
+                                height: 100%; 
+                                background-color: {% if category == 'veg' %} green {% elif category == 'nonveg' %} red {% endif %};
+                                ">
+                            </span></button>
                         </div>
                     </div>
                 </div>

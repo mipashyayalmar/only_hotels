@@ -740,3 +740,50 @@ $('#amount').val(totalPrice);
         <div id="price-${item}" class="item-price">Rs. ${sumPrice}</div>
     </div>
 </li>
+
+
+
+
+
+
+
+
+
+
+{% for category, subcats in allProds %}
+    {% for subcategory, products in subcats %}
+    <div class="category" data-subcategory="{{ subcategory }}" style="display: none;">
+        {{ subcategory }}
+        <div class="menu-items">
+            {% for product in products %}
+            <div class="menu-items">
+                <div>
+                    <h5 id="namepr{{ product.id }}" class="product-name card-title" style="display:none;">
+                        {{ product.product_name }}
+                    </h5>
+                    <h6 id="pricepr{{ product.id }}" class="product-price" style="color: #ff0000">
+                        Rs. {{ product.price }} /-
+                    </h6>
+                    <div id="divpr{{ product.id }}" class="divpr">
+                        <button id="pr{{ product.id }}" class="menu-item cart" 
+                                style="position: relative; padding-left: 10px;">
+                            {{ product.product_name }}
+                            <!-- Add a colored indicator based on the category -->
+                            <span style="
+                                position: absolute; 
+                                left: 0; 
+                                top: 0; 
+                                width: 5px; 
+                                height: 100%; 
+                                background-color: {% if category == 'veg' %} green {% elif category == 'nonveg' %} red {% endif %};
+                                ">
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+{% endfor %}

@@ -124,11 +124,11 @@
 {% endblock %}
 
 {% block js %}
-<script>
-$(document).ready(function() {
+<script>$(document).ready(function() {
     {% for i in orderHistory %}
     $('#click{{i.order_id}}').click(function() {
         $('#citems').empty();
+        
         let orderDetails = `
             <div>
                 <b>Order Id: {{i.order_id}}</b><br>
@@ -138,6 +138,7 @@ $(document).ready(function() {
         `;
         $('#citems').append(orderDetails);
         
+        // Parse items JSON
         let mydata = "{{i.items_json}}";
         mydata = mydata.replace(/&quot;/g, '"');
         let obj = JSON.parse(mydata);
@@ -163,6 +164,7 @@ $(document).ready(function() {
                         </li>`;
         $('#citems').append(totalStr);
 
+        // Open a new window with order details
         let popupContent = $('#citems').html();
         let popupWindow = window.open('', 'Order Details', 'width=600,height=400');
         popupWindow.document.write('<html><head><title>Order Details</title>');
@@ -189,5 +191,6 @@ $(document).ready(function() {
     });
     {% endfor %}
 });
+
 </script>
 {% endblock %}
