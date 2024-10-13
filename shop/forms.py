@@ -1,6 +1,13 @@
 from django import forms
 from .models import Orders
 
+from .models import Table
+
+class TableForm(forms.ModelForm):
+    class Meta:
+        model = Table
+        fields = ['number', 'status']  # Fields to display in the form
+
 class OrderUpdateForm(forms.ModelForm):
     class Meta:
         model = Orders

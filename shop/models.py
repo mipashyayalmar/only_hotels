@@ -88,3 +88,14 @@ class Advertise(models.Model):
     def __str__(self):
         return self.name
 
+
+# models.py
+from django.db import models
+
+class Table(models.Model):
+    number = models.PositiveIntegerField(unique=True)  # Unique table number
+    status = models.CharField(max_length=20, default='Blank')  # Example statuses: 'Blank', 'Running', 'Printed', 'Paid'
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)  # Amount associated with the table
+
+    def __str__(self):
+        return f'Table {self.number}'

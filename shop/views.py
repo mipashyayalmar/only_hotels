@@ -15,117 +15,22 @@ from django.db.models import Sum
 from .models import Advertise
 from .forms import AdvertiseForm
 
+from .forms import TableForm   
+from .models import Table
 
-
-def index(request):
-    allProds = []
-    categories = Product.objects.values('category', 'subcategory').distinct()
-    cats = {item['category'] for item in categories}
-    for cat in cats:
-        subcats = {item['subcategory'] for item in categories if item['category'] == cat}
-        cat_prods = []
-        for subcat in subcats:
-            prod = Product.objects.filter(category=cat, subcategory=subcat)
-            cat_prods.append([subcat, prod])
-        allProds.append([cat, cat_prods])
-    context = {'allProds': allProds}
-    return render(request, 'shop/index1.html', context)
-
-
-def advertise(request):
+def table_page(request):
     if request.method == 'POST':
-        form = AdvertiseForm(request.POST, request.FILES)
+        form = TableForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('about')  # Redirect to the about page or another relevant page
+            return redirect('shop:table_page')
     else:
-        form = AdvertiseForm()
-    return render(request, 'shop/advertise.html', {'form': form})
-
-def about(request):
-    advertisements = Advertise.objects.all()  # Get all advertisements
-    return render(request, 'shop/about.html', {'advertisements': advertisements})
+        form = TableForm()
 
 
+    tables = Table.objects.all().order_by('number')
 
-def contact(request):
-    thank = False
-    if request.method == "POST":
-        name = request.POST.get('name', '')
-        email = request.POST.get('email', '')
-        phone = request.POST.get('phone', '')
-        desc = request.POST.get('desc', '')
-        contact = Contact(name=name, email=email, phone=phone, desc=desc)
-        contact.save()
-        thank = True
-        return render(request, 'shop/contact.html', {'thank': thank})
-    return render(request, 'shop/contact.html', {'thank': thank})
-
-
-def tracker(request):
-    if request.method == "POST":
-        orderId = request.POST.get('orderId', '')
-        email = request.POST.get('email', '')
-        name = request.POST.get('name', '')
-        password = request.POST.get('password')
-        user = authenticate(username=name, password=password)
-        if user is not None:
-            try:
-                order = Orders.objects.filter(order_id=orderId, email=email)
-                if len(order) > 0:
-                    update = OrderUpdate.objects.filter(order_id=orderId)
-                    updates = []
-                    for item in update:
-                        updates.append({'text': item.update_desc, 'time': item.timestamp})
-                        response = json.dumps({"status": "success", "updates": updates, "itemsJson": order[0].items_json}, default=str)
-                    return HttpResponse(response)
-                else:
-                    return HttpResponse('{"status":"noitem"}')
-            except Exception as e:
-                return HttpResponse('{"status":"error"}')
-        else:
-            return HttpResponse('{"status":"Invalid"}')
-    return render(request, 'shop/tracker.html')
-
-
-
-    
-def searchMatch(query, item):
-    if query in item.desc.lower() or query in item.product_name.lower() or query in item.category.lower() or query in item.desc or query in item.product_name or query in item.category or query in item.desc.upper() or query in item.product_name.upper() or query in item.category.upper():
-        return True
-    else:
-        return False
-def search(request):
-    query = request.GET.get('search')
-    allProds = []
-    catprods = Product.objects.values('category', 'subcategory', 'id')
-    cats = {item['category'] for item in catprods}
-    cart = request.session.get('cart', {})
-
-    for cat in cats:
-        subcats = {item['subcategory'] for item in catprods if item['category'] == cat}
-        subcat_prods = []
-        for subcat in subcats:
-            prodtemp = Product.objects.filter(category=cat, subcategory=subcat)
-            prod = [item for item in prodtemp if searchMatch(query, item) and str(item.id) not in cart]
-            if len(prod) != 0:
-                subcat_prods.append((subcat, prod))
-        
-        if len(subcat_prods) != 0:
-            allProds.append((cat, subcat_prods))
-        else:
-            # If no subcategories, display products directly under the category
-            prodtemp = Product.objects.filter(category=cat)
-            prod = [item for item in prodtemp if searchMatch(query, item) and str(item.id) not in cart]
-            if len(prod) != 0:
-                allProds.append((cat, [("", prod)]))
-    
-    context = {'allProds': allProds, 'cart': cart, "msg": ""}
-    if len(allProds) == 0 or len(query) < 3:
-        context = {'msg': "No item available. Please make sure to enter relevant search query"}
-    
-    return render(request, 'shop/search.html', context)
-
+    return render(request, 'shop/table.html', {'form': form, 'tables': tables})
 
 
 def orderView(request):
@@ -140,8 +45,9 @@ def orderView(request):
         online_total = 0
         other_total = 0
 
-        # Get selected payment method from POST data
+        # Get selected payment method and table number from POST data
         selected_payment_method = request.POST.get('payment_method', '')
+        selected_table_no = request.POST.get('table_no', '')
 
         # If the user submits a date filter via POST
         if request.method == 'POST':
@@ -151,7 +57,7 @@ def orderView(request):
             if start_date and end_date:
                 start_date = parse_date(start_date)
                 end_date = parse_date(end_date)
-                
+
                 # Filter the order history by the provided date range
                 orderHistory = orderHistory.filter(timestamp__date__range=(start_date, end_date))
 
@@ -159,7 +65,11 @@ def orderView(request):
             if selected_payment_method:
                 orderHistory = orderHistory.filter(payment_method__iexact=selected_payment_method)
 
-        # Calculate totals for each payment method, ensuring case-insensitivity
+            # Filter by table number if one is provided
+            if selected_table_no:
+                orderHistory = orderHistory.filter(table_number__iexact=selected_table_no)
+
+        # Calculate totals for each payment method
         cash_total = orderHistory.filter(payment_method__iexact='cash').aggregate(total=Sum('amount'))['total'] or 0
         card_total = orderHistory.filter(payment_method__iexact='card').aggregate(total=Sum('amount'))['total'] or 0
         online_total = orderHistory.filter(payment_method__iexact='online').aggregate(total=Sum('amount'))['total'] or 0
@@ -181,12 +91,12 @@ def orderView(request):
             'card_total': card_total,
             'online_total': online_total,
             'other_total': other_total,
+            'selected_table_no': selected_table_no,
         })
     
-    # If the user is not authenticated, render the page without order details
     return render(request, 'shop/orderView.html')
 
-def checkout(request):
+def save(request):
     if request.method == "POST":
         # Debugging: Print all POST data
         print(f"POST Data: {request.POST}")
@@ -336,6 +246,135 @@ def checkout(request):
                 return redirect('shop:orderView')
 
     return render(request, 'shop/index1.html')
+
+
+
+def index(request, table_number):
+    # Initialize an empty list to hold all products
+    allProds = []
+    
+    # Get distinct categories and subcategories
+    categories = Product.objects.values('category', 'subcategory').distinct()
+    cats = {item['category'] for item in categories}
+    
+    # Loop through categories and subcategories to group products
+    for cat in cats:
+        subcats = {item['subcategory'] for item in categories if item['category'] == cat}
+        cat_prods = []
+        
+        for subcat in subcats:
+            # Filter products by category and subcategory
+            prod = Product.objects.filter(category=cat, subcategory=subcat)
+            cat_prods.append([subcat, prod])
+        
+        allProds.append([cat, cat_prods])
+    
+    
+    context = {
+        'allProds': allProds,
+        'table_number': table_number  
+    }
+    
+    return render(request, 'shop/index1.html', context)
+
+
+
+def advertise(request):
+    if request.method == 'POST':
+        form = AdvertiseForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            return redirect('about')  # Redirect to the about page or another relevant page
+    else:
+        form = AdvertiseForm()
+    return render(request, 'shop/advertise.html', {'form': form})
+
+def about(request):
+    advertisements = Advertise.objects.all()  # Get all advertisements
+    return render(request, 'shop/about.html', {'advertisements': advertisements})
+
+
+
+def contact(request):
+    thank = False
+    if request.method == "POST":
+        name = request.POST.get('name', '')
+        email = request.POST.get('email', '')
+        phone = request.POST.get('phone', '')
+        desc = request.POST.get('desc', '')
+        contact = Contact(name=name, email=email, phone=phone, desc=desc)
+        contact.save()
+        thank = True
+        return render(request, 'shop/contact.html', {'thank': thank})
+    return render(request, 'shop/contact.html', {'thank': thank})
+
+
+def tracker(request):
+    if request.method == "POST":
+        orderId = request.POST.get('orderId', '')
+        email = request.POST.get('email', '')
+        name = request.POST.get('name', '')
+        password = request.POST.get('password')
+        user = authenticate(username=name, password=password)
+        if user is not None:
+            try:
+                order = Orders.objects.filter(order_id=orderId, email=email)
+                if len(order) > 0:
+                    update = OrderUpdate.objects.filter(order_id=orderId)
+                    updates = []
+                    for item in update:
+                        updates.append({'text': item.update_desc, 'time': item.timestamp})
+                        response = json.dumps({"status": "success", "updates": updates, "itemsJson": order[0].items_json}, default=str)
+                    return HttpResponse(response)
+                else:
+                    return HttpResponse('{"status":"noitem"}')
+            except Exception as e:
+                return HttpResponse('{"status":"error"}')
+        else:
+            return HttpResponse('{"status":"Invalid"}')
+    return render(request, 'shop/tracker.html')
+
+
+
+    
+def searchMatch(query, item):
+    if query in item.desc.lower() or query in item.product_name.lower() or query in item.category.lower() or query in item.desc or query in item.product_name or query in item.category or query in item.desc.upper() or query in item.product_name.upper() or query in item.category.upper():
+        return True
+    else:
+        return False
+def search(request):
+    query = request.GET.get('search')
+    allProds = []
+    catprods = Product.objects.values('category', 'subcategory', 'id')
+    cats = {item['category'] for item in catprods}
+    cart = request.session.get('cart', {})
+
+    for cat in cats:
+        subcats = {item['subcategory'] for item in catprods if item['category'] == cat}
+        subcat_prods = []
+        for subcat in subcats:
+            prodtemp = Product.objects.filter(category=cat, subcategory=subcat)
+            prod = [item for item in prodtemp if searchMatch(query, item) and str(item.id) not in cart]
+            if len(prod) != 0:
+                subcat_prods.append((subcat, prod))
+        
+        if len(subcat_prods) != 0:
+            allProds.append((cat, subcat_prods))
+        else:
+            # If no subcategories, display products directly under the category
+            prodtemp = Product.objects.filter(category=cat)
+            prod = [item for item in prodtemp if searchMatch(query, item) and str(item.id) not in cart]
+            if len(prod) != 0:
+                allProds.append((cat, [("", prod)]))
+    
+    context = {'allProds': allProds, 'cart': cart, "msg": ""}
+    if len(allProds) == 0 or len(query) < 3:
+        context = {'msg': "No item available. Please make sure to enter relevant search query"}
+    
+    return render(request, 'shop/search.html', context)
+
+
+
 
 def productView(request, myid):
     product = get_object_or_404(Product, id=myid)

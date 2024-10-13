@@ -1,0 +1,234 @@
+{% load static %}
+<html>
+<head>
+    <title>Table View</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'template/table.css' %}">
+    <style>
+        .table-form {
+            display: none; /* Initially hidden */
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s ease-in-out; /* Animation effect */
+        }
+
+        .table-form.open {
+            display: block; /* Show form when open */
+            opacity: 1;
+            transform: translateY(0); /* Slide form into view */
+        }
+
+        /* Default table style */
+        .table {
+            width: 100px;
+            height: 100px;
+            border: 1px solid #ccc;
+            text-align: center;
+            line-height: 55px;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Table when a product is added to the cart */
+        .table.selected {
+            background-color: #01e800;
+            color: white; /* Ensure the text color is white when table is selected */
+        }
+
+        /* Table when payment is submitted (yellow) */
+        .table.payment-submitted {
+            background-color: #ffc107; /* Yellow for submitted payment */
+            color: black; /* Text color for better readability on yellow */
+        }
+
+        /* Table when empty (no items in cart) */
+        .table.empty {
+            background-color: #e9ecef;
+            color: black; /* Text color when the table is empty */
+        }
+
+        .table-status {
+            margin-bottom: 20px;
+        }
+
+        .status span {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .blank {
+            background-color: #e9ecef;
+        }
+
+        /* .running {
+            background-color: #ffc107;
+        } */
+
+        .printed {
+            background-color: #17a2b8;
+        }
+
+        .paid {
+            background-color: #28a745;
+        }
+
+        .running-kot {
+            background-color: #fd7e14;
+        }
+
+        .section {
+            margin-top: 20px;
+        }
+
+        .table-view {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .table.selected.error {
+            background-color: red; /* Set red for error state */
+            color: white; /* Ensure text is readable */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <button>+ Table Reservation</button>
+                <button>+ Contactless</button>
+            </div>
+            <div class="right-buttons">
+                <button>Delivery</button>
+                <button>Pick Up</button>
+                <button type="button" id="add-table-btn">+ Add Table</button>
+            </div>
+        </div>
+
+      
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Submit</button>
+            </form>
+        
+       
+        <div class="table-status">
+            <div class="status">
+                <span class="printed"></span> <input type="radio"class="printed" name="status" id="move-kot" checked>
+                <label for="move-kot">Move KOT / Items</label>
+            </div>
+            <div class="status">
+                <span class="blank"></span> Blank Table
+                <!-- <span class="running"></span> Running Table -->
+                <span class="printed"></span> Running Table
+                <span class="paid"></span> Paid Table
+                <span class="running-kot"></span> Running KOT Table
+            </div>
+        </div>
+
+        <div class="section">
+            <center style="padding: 20px;"><h3>Ground Floor</h3></center>
+            <div class="table-view">
+                {% for table in tables %}
+                    <a href="{% url 'shop:index' table.number %}" style="text-decoration:none;">
+                        <div id="table-{{ table.number }}" class="table empty" data-table="{{ table.number }}">
+                            <div class="info">
+                                {{ table.number }}
+                                <div class="amount" id="amount-{{ table.number }}">Rs. 0</div>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to get cart for a specific table
+        function getCartForTable(tableNumber) {
+            var cartKey = 'cart__shop_' + tableNumber + '_';  // Cart key for each table
+            var cart = JSON.parse(localStorage.getItem(cartKey)) || {};
+            return cart;
+        }
+
+        // Function to update the table display based on cart contents
+        function updateTableDisplay() {
+            // Iterate through each table
+            document.querySelectorAll('.table').forEach(function(tableElement) {
+                var tableNumber = tableElement.getAttribute('data-table');
+                var cart = getCartForTable(tableNumber);
+
+                var totalItems = 0;
+                var totalPrice = 0;
+
+                // Calculate total items and price for this table's cart
+                for (var item in cart) {
+                    var qty = cart[item][0];
+                    var itemPrice = cart[item][2];
+                    var itemTotal = qty * itemPrice;
+                    totalItems += qty;
+                    totalPrice += itemTotal;
+                }
+
+                // Update the table amount display
+                document.getElementById('amount-' + tableNumber).innerText = 'Rs. ' + totalPrice;
+
+                // Change table color based on cart status
+                if (totalPrice > 0) {  // If there's a total price, mark the table as "selected"
+                    tableElement.classList.remove('empty');
+                    tableElement.classList.add('selected');
+                } else {  // Otherwise, keep it "empty"
+                    tableElement.classList.remove('selected');
+                    tableElement.classList.add('empty');
+                }
+
+                // Example error handling: Change table to red if an error occurs (for demonstration)
+                if (totalItems > 0 && totalPrice < 0) {  // This condition is just for illustration
+                    tableElement.classList.add('error');  // Mark as red if any unexpected error
+                } else {
+                    tableElement.classList.remove('error');  // Remove red error state if resolved
+                }
+            });
+        }
+
+        // Function to handle payment submission and show yellow for 5 minutes
+        function handlePaymentSubmission(tableNumber) {
+            var tableElement = document.getElementById('table-' + tableNumber);
+
+            // Change the table color to yellow for payment submission
+            tableElement.classList.add('payment-submitted');
+
+            // Set a timeout to revert the color back to the default state after 5 minutes (300000 milliseconds)
+            setTimeout(function() {
+                tableElement.classList.remove('payment-submitted');
+                updateTableDisplay();  // Revert to the original state after 5 minutes
+            }, 300000);  // 5 minutes = 300000 ms
+        }
+
+        // Initialize table display on page load
+        updateTableDisplay();
+
+        // Example function to trigger the payment submission status (replace this with actual payment trigger logic)
+        document.querySelectorAll('.table').forEach(function(tableElement) {
+            tableElement.addEventListener('click', function() {
+                var tableNumber = tableElement.getAttribute('data-table');
+                handlePaymentSubmission(tableNumber);
+            });
+        });
+
+        // Optional: Clear cart functionality (for testing)
+        document.getElementById('clearCart')?.addEventListener('click', function() {
+            document.querySelectorAll('.table').forEach(function(tableElement) {
+                var tableNumber = tableElement.getAttribute('data-table');
+                var cartKey = 'cart__shop_' + tableNumber + '_';
+                localStorage.removeItem(cartKey);
+            });
+            updateTableDisplay();
+        });
+    </script>
+</body>
+</html>

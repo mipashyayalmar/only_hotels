@@ -1,5 +1,8 @@
 from django.contrib import admin
 from .models import Product, Contact, Orders, OrderUpdate, Advertise
+from .models import Table
+
+admin.site.register(Table)
 
 # Register your models here.
 

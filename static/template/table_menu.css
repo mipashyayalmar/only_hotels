@@ -49,12 +49,13 @@ main-body {
   #notification {
     position: fixed;
     top: 60px;
-    right: 0%;
-    width: 251px;
-    background-color: rgba(0, 0, 0, 0.8);
+    right: 111px;
+    width: 296px;
+    background-color: rgb(0 235 77);
     color: white;
     padding: 10px;
     z-index: 1000;
+    display: none;
     text-align: center;
     transition: opacity 0.5s ease;
 }
