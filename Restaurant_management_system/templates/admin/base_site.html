@@ -1,10 +1,33 @@
 {% extends 'admin/base.html' %}
 {%load static%}
 {% block branding %}
-
+<style>
+  .login #header {
+    background-color: orange;
+    height: auto;
+    padding: 15px 16px;
+    justify-content: center;
+}
+.errornote {
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: block;
+  padding: 10px 12px;
+  margin: 0 0 10px 0;
+  color: #ffffff;
+  border: 1px solid var(--error-fg);
+  border-radius: 4px;
+  background-color: var(--body-bg);
+  background-position: 5px 12px;
+  overflow-wrap: break-word;
+}
+</style>
 <h1 id="head">
-  <a href="http://127.0.0.1:8000/admin"><img src="http://127.0.0.1:8000/media/shop/images/logo.png" width="35" height="35" /></a>
-  The Food Mania
+  <a href="https://mipashyayalmar.github.io/-Profile-data/">
+    <img src="{% static 'dist/img/favicon.png' %}" style="width: 69px; height: 69px; border-radius: 50%;" /> ROYAL SHETKARI
+</a>
+
+
 </h1>
 
 {% endblock %}

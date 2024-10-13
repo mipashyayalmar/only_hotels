@@ -50,6 +50,12 @@
         <a class="nav-link" href="/shop/contact">Contact Us</a>
       </li>
     </ul>
+
+    {% if user.last_name == 'admin' %}
+    <a class="navbar-brand" href="/shop">ADMIN</a>
+    {% else %}
+    <a class="navbar-brand" href="/shop">MANAGER</a>
+    {% endif %}
     <form method="get" action="/shop/search" class="form-inline my-2 my-lg-0 mx-3">
       <input class="form-control mr-sm-2" type="search" name="search" id="search" placeholder="Search" aria-label="Search" required>
       <button class="btn navbar-brand btn-outline-info my-2 my-sm-0" type="submit">Search</button>

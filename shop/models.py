@@ -1,6 +1,4 @@
 from django.db import models
-
-# Create your models here.
 from django.utils import timezone
 
 
@@ -30,10 +28,6 @@ class Contact(models.Model):
         return self.name
 
 
-
-
-from django.db import models
-from django.utils import timezone
 
 class Orders(models.Model):
     PAYMENT_METHOD_CHOICES = [

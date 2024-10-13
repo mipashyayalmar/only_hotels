@@ -411,37 +411,47 @@ def handeLogin(request):
     return HttpResponse("404- Not found")
 
 
+
+    
 def handleSignUp(request):
     if request.method == "POST":
         # Get the post parameters
         username = request.POST['username']
         f_name = request.POST['f_name']
-        l_name = request.POST['l_name']
+        l_name = request.POST['l_name']  # Dropdown value
         email = request.POST['email1']
         phone = request.POST['phone']
         password = request.POST['password']
         password1 = request.POST['password1']
 
-        # check for errorneous input
-        if (password1 != password):
-            messages.warning(request, " Passwords do not match")
+        # Validate if the last name (role) is one of the predefined options
+        allowed_roles = ["admin", "manager", "employee"]
+        if l_name not in allowed_roles:
+            messages.warning(request, "Invalid role selected.")
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
+        # Check if passwords match
+        if password1 != password:
+            messages.warning(request, "Passwords do not match")
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+        # Check if username is already taken
         try:
             user = User.objects.get(username=username)
-            messages.warning(request, " Username Already taken. Try with different Username.")
+            messages.warning(request, "Username already taken. Try a different one.")
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
         except User.DoesNotExist:
-            # Create the user
+            # Create the user if all validations pass
             myuser = User.objects.create_user(username=username, email=email, password=password)
             myuser.first_name = f_name
-            myuser.last_name = l_name
+            myuser.last_name = l_name  # Store the role in last_name
             myuser.phone = phone
             myuser.save()
-            messages.success(request, " Your Account has been successfully created")
+            messages.success(request, "Your account has been successfully created")
             return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
     else:
         return HttpResponse("404 - Not found")
+
 
 
 def handleLogout(request):
