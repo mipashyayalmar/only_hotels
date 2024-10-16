@@ -14,7 +14,7 @@ urlpatterns = [
      path('advertise/', views.advertise, name='advertise'),
     path('about/', views.about, name='about'),
     
-    path('contact/', views.contact, name="ContactUs"),
+    path('contact/', views.contact, name="contact"),
     path('tracker/', views.tracker, name="TrackingStatus"),
     path('search/', views.search, name="Search"),
     path('save/', views.save, name="checkout"),

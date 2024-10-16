@@ -66,3 +66,19 @@ class AdvertiseForm(forms.ModelForm):
     class Meta:
         model = Advertise
         fields = ['name', 'image2']
+
+
+
+
+from django import forms
+from .models import Orders
+
+class OrderForm(forms.ModelForm):
+    class Meta:
+        model = Orders
+        fields = [
+            'items_json', 'userId', 'amount', 'name', 
+            'email', 'address', 'city', 'state', 
+            'zip_code', 'phone', 'payment_method', 
+            'payment_comments'
+        ]

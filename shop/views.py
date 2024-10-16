@@ -8,16 +8,84 @@ from math import ceil
 from django.contrib.auth import authenticate, login, logout
 import json
 from django.views.decorators.csrf import csrf_exempt
-from PayTm import Checksum
 MERCHANT_KEY = 'kbzk1DSbJiV_O3p5';   
 from django.utils.dateparse import parse_date
 from django.db.models import Sum
 from .models import Advertise
 from .forms import AdvertiseForm
 
+
+
+from django.core.mail import send_mail
+from django.conf import settings
+
+
 from .forms import TableForm   
 from .models import Table
+from django.contrib.auth.decorators import login_required
 
+
+
+from decimal import Decimal
+
+from .models import Orders, Product
+from .forms import OrderUpdateForm
+
+# Custom JSON encoder to handle Decimal objects
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)  # Convert Decimal to float
+        return super(DecimalEncoder, self).default(obj)
+
+def update_order(request, order_id):
+    # Retrieve the order instance or return a 404 error if not found
+    order = get_object_or_404(Orders, order_id=order_id)
+
+    if request.method == 'POST':
+        # Create a form instance with POST data
+        form = OrderUpdateForm(request.POST, instance=order)
+        if form.is_valid():
+            # Save the form data without committing to the database yet
+            updated_order = form.save(commit=False)
+            # Update the items_json and amount from the POST request
+            updated_order.items_json = request.POST.get('itemsJson')  # Ensure you are using 'itemsJson'
+            updated_order.amount = request.POST.get('amount')
+            # Save the updated order to the database
+            updated_order.save()
+
+            # Retrieve product names associated with the order
+            product_ids = json.loads(updated_order.items_json)  # Use updated_order's items_json
+            product_names = ', '.join(
+                Product.objects.get(id=prod_id).product_name for prod_id in product_ids.keys()
+            )
+
+            # Add a success message for the user
+            messages.success(request, f"Order {order_id} successfully updated. Products: {product_names} with amount Rs. {updated_order.amount}.")
+            # Redirect to the order view
+            return redirect('shop:orderView')
+    else:
+        # Prepare the form with existing order data for GET requests
+        form = OrderUpdateForm(instance=order)
+
+    # Prepare form data and cart data in JSON format
+    form_data_json = {field: form.initial.get(field, '') for field in form.fields}
+    cart_data = json.loads(order.items_json) if order.items_json else {}
+
+    # Retrieve all products to display them in the template
+    products = Product.objects.all().order_by('product_name')
+
+    return render(request, 'shop/update_order.html', {
+        'form': form,
+        'form_data_json': json.dumps(form_data_json, cls=DecimalEncoder),  # Use custom encoder
+        'cart_data_json': json.dumps(cart_data, cls=DecimalEncoder),        # Convert cart data to JSON
+        'products': products,  # Pass all products to the template
+        'order': order  # Pass the order object to the template
+    })
+
+
+
+@login_required
 def table_page(request):
     if request.method == 'POST':
         form = TableForm(request.POST)
@@ -33,69 +101,80 @@ def table_page(request):
     return render(request, 'shop/table.html', {'form': form, 'tables': tables})
 
 
+@login_required
 def orderView(request):
-    if request.user.is_authenticated:
-        current_user = request.user
-        orderHistory = Orders.objects.filter(userId=current_user.id)
-
-        # Initialize totals
-        total_amount = 0
-        cash_total = 0
-        card_total = 0
-        online_total = 0
-        other_total = 0
-
-        # Get selected payment method and table number from POST data
-        selected_payment_method = request.POST.get('payment_method', '')
-        selected_table_no = request.POST.get('table_no', '')
-
-        # If the user submits a date filter via POST
-        if request.method == 'POST':
-            start_date = request.POST.get('start_date')
-            end_date = request.POST.get('end_date')
-
-            if start_date and end_date:
-                start_date = parse_date(start_date)
-                end_date = parse_date(end_date)
-
-                # Filter the order history by the provided date range
-                orderHistory = orderHistory.filter(timestamp__date__range=(start_date, end_date))
-
-            # Filter by payment method if one is selected
-            if selected_payment_method:
-                orderHistory = orderHistory.filter(payment_method__iexact=selected_payment_method)
-
-            # Filter by table number if one is provided
-            if selected_table_no:
-                orderHistory = orderHistory.filter(table_number__iexact=selected_table_no)
-
-        # Calculate totals for each payment method
-        cash_total = orderHistory.filter(payment_method__iexact='cash').aggregate(total=Sum('amount'))['total'] or 0
-        card_total = orderHistory.filter(payment_method__iexact='card').aggregate(total=Sum('amount'))['total'] or 0
-        online_total = orderHistory.filter(payment_method__iexact='online').aggregate(total=Sum('amount'))['total'] or 0
-        other_total = orderHistory.filter(payment_method__iexact='other').aggregate(total=Sum('amount'))['total'] or 0
-
-        # Calculate the total amount for all filtered orders
-        total_amount = orderHistory.aggregate(total=Sum('amount'))['total'] or 0
-
-        # If no orders are found, inform the user
-        if not orderHistory.exists():
-            messages.info(request, "You don't have any orders within the selected filters.")
-            return render(request, 'shop/orderView.html')
-
-        # Render the template with order history and totals for each payment method
-        return render(request, 'shop/orderView.html', {
-            'orderHistory': orderHistory,
-            'total_amount': total_amount,
-            'cash_total': cash_total,
-            'card_total': card_total,
-            'online_total': online_total,
-            'other_total': other_total,
-            'selected_table_no': selected_table_no,
-        })
+    # Check if the user is authenticated
+    if not request.user.is_authenticated:
+        # Redirect to the index page if the user is not authenticated
+        messages.warning(request, "You must be logged in to view this page.")
+        return redirect('index')  # 'index' is the name of the URL pattern for the homepage
     
-    return render(request, 'shop/orderView.html')
+    current_user = request.user
 
+    # Check if the user's last name is "admin"
+    if current_user.last_name.lower() == "admin":
+        orderHistory = Orders.objects.all()  # Show all orders for admin
+    else:
+        orderHistory = Orders.objects.filter(userId=current_user.id)  # Show only the user's orders
+
+    # Initialize totals
+    total_amount = 0
+    cash_total = 0
+    card_total = 0
+    online_total = 0
+    other_total = 0
+
+    # Get selected payment method and table number from POST data
+    selected_payment_method = request.POST.get('payment_method', '')
+    selected_table_no = request.POST.get('table_no', '')
+
+    # If the user submits a date filter via POST
+    if request.method == 'POST':
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+
+        if start_date and end_date:
+            start_date = parse_date(start_date)
+            end_date = parse_date(end_date)
+
+            # Filter the order history by the provided date range
+            orderHistory = orderHistory.filter(timestamp__date__range=(start_date, end_date))
+
+        # Filter by payment method if one is selected
+        if selected_payment_method:
+            orderHistory = orderHistory.filter(payment_method__iexact=selected_payment_method)
+
+        # Filter by table number if one is provided
+        if selected_table_no:
+            orderHistory = orderHistory.filter(table_number__iexact=selected_table_no)
+
+    # Calculate totals for each payment method
+    cash_total = orderHistory.filter(payment_method__iexact='cash').aggregate(total=Sum('amount'))['total'] or 0
+    card_total = orderHistory.filter(payment_method__iexact='card').aggregate(total=Sum('amount'))['total'] or 0
+    online_total = orderHistory.filter(payment_method__iexact='online').aggregate(total=Sum('amount'))['total'] or 0
+    other_total = orderHistory.filter(payment_method__iexact='other').aggregate(total=Sum('amount'))['total'] or 0
+
+    # Calculate the total amount for all filtered orders
+    total_amount = orderHistory.aggregate(total=Sum('amount'))['total'] or 0
+
+    # If no orders are found, inform the user
+    if not orderHistory.exists():
+        messages.info(request, "No orders found with the selected filters.")
+        return render(request, 'shop/orderView.html')
+
+    # Render the template with order history and totals for each payment method
+    return render(request, 'shop/orderView.html', {
+        'orderHistory': orderHistory,
+        'total_amount': total_amount,
+        'cash_total': cash_total,
+        'card_total': card_total,
+        'online_total': online_total,
+        'other_total': other_total,
+        'selected_table_no': selected_table_no,
+    })
+
+
+@login_required
 def save(request):
     if request.method == "POST":
         # Debugging: Print all POST data
@@ -248,7 +327,7 @@ def save(request):
     return render(request, 'shop/index1.html')
 
 
-
+@login_required
 def index(request, table_number):
     # Initialize an empty list to hold all products
     allProds = []
@@ -278,7 +357,7 @@ def index(request, table_number):
     return render(request, 'shop/index1.html', context)
 
 
-
+@login_required
 def advertise(request):
     if request.method == 'POST':
         form = AdvertiseForm(request.POST, request.FILES)
@@ -293,50 +372,61 @@ def about(request):
     advertisements = Advertise.objects.all()  # Get all advertisements
     return render(request, 'shop/about.html', {'advertisements': advertisements})
 
-
-
 def contact(request):
-    thank = False
     if request.method == "POST":
-        name = request.POST.get('name', '')
-        email = request.POST.get('email', '')
-        phone = request.POST.get('phone', '')
-        desc = request.POST.get('desc', '')
-        contact = Contact(name=name, email=email, phone=phone, desc=desc)
-        contact.save()
-        thank = True
-        return render(request, 'shop/contact.html', {'thank': thank})
-    return render(request, 'shop/contact.html', {'thank': thank})
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        phone = request.POST.get('phone')
+        desc = request.POST.get('desc')
 
+        # Validate data if needed
 
+        # Prepare the email content
+        subject = f"Contact Form Royal Shetkari from {name}"
+        message = f"Name: {name}\nEmail: {email}\nPhone: {phone}\nMessage: {desc}"
+        from_email = settings.DEFAULT_FROM_EMAIL
+        recipient_list = ['yalmarprasad123@gmail.com']
+
+        # Send email
+        try:
+            send_mail(subject, message, from_email, recipient_list)
+            messages.success(request, 'Thanks for contacting us. We will get back to you soon!')
+            return redirect('shop:contact')  # Redirect back to contact page
+        except Exception as e:
+            messages.error(request, 'There was an error sending your message. Please try again later.')
+
+    return render(request, 'shop/contact.html')
+
+@login_required
 def tracker(request):
     if request.method == "POST":
         orderId = request.POST.get('orderId', '')
-        email = request.POST.get('email', '')
-        name = request.POST.get('name', '')
-        password = request.POST.get('password')
-        user = authenticate(username=name, password=password)
-        if user is not None:
-            try:
-                order = Orders.objects.filter(order_id=orderId, email=email)
-                if len(order) > 0:
-                    update = OrderUpdate.objects.filter(order_id=orderId)
-                    updates = []
-                    for item in update:
-                        updates.append({'text': item.update_desc, 'time': item.timestamp})
-                        response = json.dumps({"status": "success", "updates": updates, "itemsJson": order[0].items_json}, default=str)
-                    return HttpResponse(response)
-                else:
-                    return HttpResponse('{"status":"noitem"}')
-            except Exception as e:
-                return HttpResponse('{"status":"error"}')
-        else:
-            return HttpResponse('{"status":"Invalid"}')
+        
+        try:
+            # Filter order by order_id only
+            order = Orders.objects.filter(order_id=orderId)
+            if order.exists():
+                # Fetch updates related to the order
+                updates = []
+                update_items = OrderUpdate.objects.filter(order_id=orderId)
+                for item in update_items:
+                    updates.append({'text': item.update_desc, 'time': item.timestamp})
+                
+                response = json.dumps({
+                    "status": "success", 
+                    "updates": updates, 
+                    "itemsJson": order[0].items_json
+                }, default=str)
+                
+                return HttpResponse(response)
+            else:
+                return HttpResponse('{"status":"noitem"}')
+        except Exception as e:
+            return HttpResponse('{"status":"error"}')
+    
     return render(request, 'shop/tracker.html')
 
 
-
-    
 def searchMatch(query, item):
     if query in item.desc.lower() or query in item.product_name.lower() or query in item.category.lower() or query in item.desc or query in item.product_name or query in item.category or query in item.desc.upper() or query in item.product_name.upper() or query in item.category.upper():
         return True
@@ -457,8 +547,7 @@ def handleSignUp(request):
 def handleLogout(request):
     logout(request)
     messages.success(request, "Successfully logged out")
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
-
+    return redirect('index')  # Redirects to the homepage
 
 @csrf_exempt
 def handlerequest(request):
@@ -479,63 +568,3 @@ def handlerequest(request):
     return render(request, 'shop/paymentstatus.html', {'response': response_dict})
 
 
-
-
-def update_order(request):
-    if request.method == "POST":
-        order_id = request.POST.get('order_id', '')
-
-        try:
-            order = Orders.objects.get(order_id=order_id)
-            order_updates = OrderUpdate.objects.filter(order_id=order_id)
-            items_json = json.loads(order.items_json)  # Assuming items_json is a JSON string
-            return render(request, 'shop/updateorder.html', {
-                'order': order, 
-                'order_updates': order_updates, 
-                'order_found': True, 
-                'items': items_json
-            })
-        except Orders.DoesNotExist:
-            return render(request, 'shop/updateorder.html', {'order_not_found': True})
-    
-    return render(request, 'shop/update_order.html', {
-        'form': form,
-        'form_data_json': json.dumps(form_data_json),
-        'amount': order.amount,
-    })
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib import messages
-from .models import Orders
-from .forms import OrderUpdateForm
-import json
-def update_order(request, order_id):
-    # Retrieve the order instance
-    order = get_object_or_404(Orders, order_id=order_id)
-    
-    if request.method == 'POST':
-        form = OrderUpdateForm(request.POST, instance=order)
-        if form.is_valid():
-            updated_order = form.save(commit=False)
-            updated_order.items_json = request.POST.get('items_json')  # Update items_json
-            updated_order.amount = request.POST.get('amount')          # Update amount
-            updated_order.save()
-            
-            name = updated_order.name  # Assuming 'name' is a field in the Orders model
-            amount = updated_order.amount  # Get the updated amount
-            
-            messages.success(request, f"Order {order_id} successfully updated by {name} with amount Rs. {amount}.")
-            return redirect('shop:orderView')  # Ensure this name matches the URL pattern name
-    else:
-        # Prepare the form with existing order data for GET requests
-        form = OrderUpdateForm(instance=order)
-    
-    # Prepare form data and cart data in JSON format
-    form_data_json = {field: form.initial.get(field, '') for field in form.fields}
-    cart_data = json.loads(order.items_json) if order.items_json else {}
-    
-    return render(request, 'shop/update_order.html', {
-        'form': form,
-        'form_data_json': json.dumps(form_data_json),  # Convert form data to JSON string
-        'cart_data_json': json.dumps(cart_data),        # Convert cart data to JSON string
-        'order': order  # Pass the order object to the template
-    })

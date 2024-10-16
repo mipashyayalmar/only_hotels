@@ -6,6 +6,22 @@ main-body {
     height: 93vh;
   }
   
+  @media (max-width: 545px){
+    main-body{
+      
+    display: block;
+    height: 93vh;
+    width: 108%;
+    }
+  }
+
+  @media only screen and (min-width: 545px) and (max-width: 800px){
+    .main-body {
+      width: 183%;
+  }
+  
+  }
+
 /* For webkit browsers (Chrome, Safari, etc.) */
 ::-webkit-scrollbar {
   width: 2px;  /* Set the width of the scrollbar */
@@ -68,6 +84,21 @@ main-body {
     height: 93.2vh;
     overflow: scroll;
   }
+
+
+  @media only screen and (min-width: 540px) and (max-width: 800px){
+    .main-content {
+      flex: auto;
+      
+    }
+  }
+
+  @media (max-width: 1001px) {
+    .main-content {
+      overflow-x:hidden; 
+    }
+  }
+  
   .search-bar {
     display: flex;
     padding: 10px;
@@ -80,6 +111,12 @@ main-body {
     margin-right: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
+  }
+
+  @media (max-width: 545px) {
+    .search-bar input {
+      width: 100px;
+    }
   }
   .search-bar button {
     padding: 10px 20px;
@@ -99,6 +136,12 @@ main-body {
     flex-direction: column;
     height: 93.2vh;
   }
+
+  @media (max-width: 700px){
+.order-section {
+  width:100%;
+    height: 108%;
+}}
   .order-header {
     display: flex;
     justify-content: space-between;
@@ -111,6 +154,12 @@ main-body {
     flex: 1;
     margin: 0 0;
     text-align: center;
+  }
+
+  @media only screen and (min-width: 545px) and (max-width: 800px){
+    .order-section {
+      width:46%;
+    }
   }
   @media (min-width: 1070px) {
     .order-header div, .order-header button {
@@ -130,7 +179,7 @@ main-body {
   }
   .order-list {
     flex: 1;
-    padding: 20px;
+    padding: 20px 8px 10px 0px;
     overflow-y: auto;
   }
   .order-item {
@@ -261,9 +310,10 @@ main-body {
     font-size: 10px;
   }
   .item-price {
-    margin-top: -48px;
-    font-size: 19px;
-  }
+    margin: -42px 6px 3px 5px;
+    font-size: 17px;
+    width: 76px;
+}
   .total_p_name{
     color:white;
     font-size:9px;
@@ -366,9 +416,11 @@ main-body {
     color: white;
   }
   
-  @media (max-width: 768px) {
+  @media (max-width: 545px) {
     .sidebar {
-        width: 100%;
+        width: 99%;
+        height: 96%;
+        margin-top: -115px;
     }
     .sidebar li {
         font-size: 1rem;
@@ -384,9 +436,9 @@ main-body {
   .menu-items {
     display: flex;
     flex-wrap: wrap;
-    padding: 20px 10px;
+    padding: 5px 9px;
     background-color: #f9f9f9;
-    max-height: 93vh;
+    /* max-height: 93vh; */
     overflow-y: auto;
     overflow-x: hidden;
   }
@@ -397,7 +449,6 @@ main-body {
     align-items: center;
     width: 190px;
     height: 80px;
-    padding: 10px;
     margin: 8px;
     background-color: white;
     border: 1px solid #ccc;
@@ -407,7 +458,12 @@ main-body {
     font-size: 16px;
     position: relative;
   }
-  
+  @media (max-width: 545px){
+    .menu-item {
+      width: 160px;
+    }
+
+  }
   .menu-item::before {
     content: ''; 
     position: absolute; 

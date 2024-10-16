@@ -1,7 +1,7 @@
 {% load static %}
 <html>
 <head>
-    <title>Table View</title>
+    <title>Table Royal_Shetkari</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <link rel="stylesheet" href="{% static 'template/table.css' %}">
     <style>
@@ -84,6 +84,7 @@
             padding: 0px 169px;
             justify-content: center;
         }
+
         .table.selected.error {
             background-color: red; /* Set red for error state */
             color: white; /* Ensure text is readable */
@@ -94,8 +95,8 @@
     <div class="container">
         <div class="header">
             <div>
-                <button>+ Table Reservation</button>
-                <button>+ Contactless</button>
+                <a href="/shop/orderView/"><button>Your Orders</button></a>
+                <a href="/shop/logout/"><button>Log-Out</button></a>
             </div>
             <div class="right-buttons">
                 <button>Delivery</button>
@@ -113,7 +114,11 @@
                 <button type="submit">Submit</button>
             </form>
             {% else %}
-                <p>You do not have permission to view this form.</p>
+            <div id="cont2">
+                <div class="alert alert-info" style="font-size:22px;background-color:red;padding:50px,30px;margin:30px 10px">
+                    <font style="font-size:22px;background-color:red;"><center>⚠️ {{ request.user|title }} You don't have permissions, please inform <strong><a class="alert-link" data-toggle="modal" data-target="#loginModal">ADMIN</a></strong></center></font>
+                </div>
+            </div>
             {% endif %}
         </div>
 
@@ -129,106 +134,118 @@
                 <span class="running-kot"></span> Running KOT Table
             </div>
         </div>
-
         <div class="section">
-            <center style="padding: 20px;"><h3>Ground Floor</h3></center>
+            <center style="padding: 20px;">
+                <h3>Ground Floor</h3>
+            </center>
             <div class="table-view">
                 {% for table in tables %}
-                    <a href="{% url 'shop:index' table.number %}" style="text-decoration:none;">
-                        <div id="table-{{ table.number }}" class="table empty" data-table="{{ table.number }}">
-                            <div class="info">
-                                {{ table.number }}
-                                <div class="amount" id="amount-{{ table.number }}">Rs. 0</div>
-                            </div>
+                <a href="{% url 'shop:index' table.number %}" style="text-decoration:none;">
+                    <div id="table-{{ table.number }}" class="table empty" data-table="{{ table.number }}">
+                        <div class="info">
+                            {{ table.number }}
+                            <div class="amount" id="amount-{{ table.number }}">Rs. 0</div>
                         </div>
-                    </a>
+                    </div>
+                </a>
                 {% endfor %}
             </div>
         </div>
-    </div>
-
-    <script>
-        // Function to get cart for a specific table
-        function getCartForTable(tableNumber) {
-            var cartKey = 'cart__shop_' + tableNumber + '_';  // Cart key for each table
-            var cart = JSON.parse(localStorage.getItem(cartKey)) || {};
-            return cart;
-        }
-
-        // Function to update the table display based on cart contents
-        function updateTableDisplay() {
-            document.querySelectorAll('.table').forEach(function(tableElement) {
-                var tableNumber = tableElement.getAttribute('data-table');
-                var cart = getCartForTable(tableNumber);
-
-                var totalItems = 0;
-                var totalPrice = 0;
-
-                for (var item in cart) {
-                    var qty = cart[item][0];
-                    var itemPrice = cart[item][2];
-                    var itemTotal = qty * itemPrice;
-                    totalItems += qty;
-                    totalPrice += itemTotal;
-                }
-
-                document.getElementById('amount-' + tableNumber).innerText = 'Rs. ' + totalPrice;
-
-                if (totalPrice > 0) {
-                    tableElement.classList.remove('empty');
-                    tableElement.classList.add('selected');
-                } else {
-                    tableElement.classList.remove('selected');
-                    tableElement.classList.add('empty');
-                }
-
-                if (totalItems > 0 && totalPrice < 0) {
-                    tableElement.classList.add('error');
-                } else {
-                    tableElement.classList.remove('error');
-                }
-            });
-        }
-
-        // Function to handle payment submission and show yellow for 5 minutes
-        function handlePaymentSubmission(tableNumber) {
-            var tableElement = document.getElementById('table-' + tableNumber);
-
-            tableElement.classList.add('payment-submitted');
-
-            setTimeout(function() {
-                tableElement.classList.remove('payment-submitted');
-                updateTableDisplay();
-            }, 300000);  // 5 minutes
-        }
-
-        updateTableDisplay();
-
-        document.querySelectorAll('.table').forEach(function(tableElement) {
-            tableElement.addEventListener('click', function() {
-                var tableNumber = tableElement.getAttribute('data-table');
-                handlePaymentSubmission(tableNumber);
-            });
-        });
-
-        // Toggle form visibility when the + Add Table button is clicked
-        document.getElementById('add-table-btn').addEventListener('click', function() {
-            var form = document.getElementById('table-form');
-            if (form.classList.contains('open')) {
-                form.classList.remove('open');
-            } else {
-                form.classList.add('open');
+        
+        <script>
+            // Function to get the cart for a specific table
+            function getCartForTable(tableNumber) {
+                // Fetch cart from local storage
+                var cartKey = 'cart__shop_' + tableNumber + '_';  // Unique cart key for each table
+                var cart = JSON.parse(localStorage.getItem(cartKey)) || {};  // Return empty cart if none found
+                return cart;
             }
-        });
 
-        document.getElementById('clearCart')?.addEventListener('click', function() {
-            document.querySelectorAll('.table').forEach(function(tableElement) {
-                var tableNumber = tableElement.getAttribute('data-table');
-                var cartKey = 'cart__shop_' + tableNumber + '_';
-                localStorage.removeItem(cartKey);
-            });
+            // Function to update the table display based on the cart data
+            function updateTableDisplay() {
+                document.querySelectorAll('.table').forEach(function(tableElement) {
+                    var tableNumber = tableElement.getAttribute('data-table');
+                    var cart = getCartForTable(tableNumber);
+
+                    var totalItems = 0;
+                    var totalPrice = 0;
+
+                    // Calculate total items and price in the cart
+                    for (var item in cart) {
+                        var qty = cart[item][0];  // Quantity of the item
+                        var itemPrice = cart[item][2];  // Price of the item
+                        var itemTotal = qty * itemPrice;  // Total price for this item
+                        totalItems += qty;
+                        totalPrice += itemTotal;
+                    }
+
+                    // Update the table's amount display
+                    document.getElementById('amount-' + tableNumber).innerText = 'Rs. ' + totalPrice;
+
+                    // Update the table's class based on the total price
+                    if (totalPrice > 0) {
+                        tableElement.classList.remove('empty');
+                        tableElement.classList.add('selected');
+                    } else {
+                        tableElement.classList.remove('selected');
+                        tableElement.classList.add('empty');
+                    }
+
+                    // Add 'error' class if there's a logic issue (e.g., negative total price)
+                    if (totalItems > 0 && totalPrice < 0) {
+                        tableElement.classList.add('error');
+                    } else {
+                        tableElement.classList.remove('error');
+                    }
+                });
+            }
+
+            // Function to handle payment submission and highlight the table for 5 minutes
+            function handlePaymentSubmission(tableNumber) {
+                var tableElement = document.getElementById('table-' + tableNumber);
+
+                // Highlight the table by adding a specific class
+                tableElement.classList.add('payment-submitted');
+
+                // Remove the highlight after 5 minutes (300000ms)
+                setTimeout(function() {
+                    tableElement.classList.remove('payment-submitted');
+                    updateTableDisplay();  // Recheck and update the table display after timeout
+                }, 300000);  // 5 minutes
+            }
+
+            // Initial call to update all tables
             updateTableDisplay();
-        });
-    </script>
+
+            // Add click event listener to each table for handling payment submissions
+            document.querySelectorAll('.table').forEach(function(tableElement) {
+                tableElement.addEventListener('click', function() {
+                    var tableNumber = tableElement.getAttribute('data-table');
+                    
+                    // Play a sound effect when a table is clicked
+                    var soundEffect = new Audio("{% static 'sound/short-punchy-sine-wave-ding-6-f-211747.mp3' %}");
+                    soundEffect.play();
+                    
+                    handlePaymentSubmission(tableNumber);  // Trigger payment submission on table click
+                });
+            });
+
+            // Toggle form visibility when the + Add Table button is clicked
+            document.getElementById('add-table-btn').addEventListener('click', function() {
+                var form = document.getElementById('table-form');
+                form.classList.toggle('open');  // Toggle the 'open' class to show/hide the form
+            });
+
+            // Clear all carts and update the display when the Clear Cart button is clicked
+            document.getElementById('clearCart')?.addEventListener('click', function() {
+                document.querySelectorAll('.table').forEach(function(tableElement) {
+                    var tableNumber = tableElement.getAttribute('data-table');
+                    var cartKey = 'cart__shop_' + tableNumber + '_';
+                    localStorage.removeItem(cartKey);  // Remove cart data from local storage
+                });
+                updateTableDisplay();  // Refresh the table display after clearing carts
+            });
+        </script>
+
 </body>
 </html>

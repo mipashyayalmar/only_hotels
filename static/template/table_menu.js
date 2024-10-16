@@ -51,8 +51,6 @@ document.querySelectorAll('.subcategory-link').forEach(link => {
 
 
 
-
-
 document.addEventListener('DOMContentLoaded', function() {
     const searchBtn = document.getElementById('search-btn');
     const searchInput = document.getElementById('search-input');
@@ -98,6 +96,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Function to handle clicking on a product to show the price
+    function showProductPrice(event) {
+        const productId = event.currentTarget.getAttribute('data-id');
+        const priceElement = document.getElementById('pricepr' + productId);
+
+        // Toggle price visibility
+        if (priceElement.style.display === 'none') {
+            priceElement.style.display = 'block';
+        } else {
+            priceElement.style.display = 'none';
+        }
+    }
+
     // Attach event to search button
     searchBtn.addEventListener('click', searchProducts);
 
@@ -106,5 +117,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (event.key === 'Enter') {
             searchProducts();
         }
+    });
+
+    // Attach click event to all product buttons to show price on click
+    document.querySelectorAll('.product-button').forEach(button => {
+        button.addEventListener('click', showProductPrice);
     });
 });

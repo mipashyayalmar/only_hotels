@@ -9,6 +9,5 @@ urlpatterns = [
     path('', views.index, name='index'),
     path('admin/', admin.site.urls),
     path('shop/', include('shop.urls', namespace='shop')),
-    path('restaurant/', include('restaurant.urls')),
     path('shop/<int:table_number>/', views.table_detail, name='table_detail'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
